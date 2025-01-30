@@ -5,8 +5,45 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:_"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
-    <Grid>
+        Title="CPU亲和性管理器" Height="450" Width="800">
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
 
+        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,20">
+            <TextBlock Text="进程名称：" VerticalAlignment="Center"/>
+            <TextBox Text="{Binding ProcessNameInput, UpdateSourceTrigger=PropertyChanged}"
+                     Width="200" Margin="5,0"/>
+            <Button Content="设置CPU亲和性(0-15)"
+                    Command="{Binding SetProcessAffinityCommand}"
+                    Padding="10,5"/>
+        </StackPanel>
+
+        <!-- 添加刷新按钮和监控列表 -->
+        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,10">
+            <Button Content="刷新监控列表" 
+                    Command="{Binding RefreshMonitoredProcessesCommand}"
+                    Padding="10,5"/>
+        </StackPanel>
+
+        <ListView Grid.Row="2" 
+                  ItemsSource="{Binding MonitoredProcesses}">
+            <ListView.View>
+                <GridView>
+                    <GridViewColumn Header="进程名称" 
+                                  DisplayMemberBinding="{Binding ProcessName}" 
+                                  Width="200"/>
+                    <GridViewColumn Header="进程ID" 
+                                  DisplayMemberBinding="{Binding ProcessId}" 
+                                  Width="80"/>
+                    <GridViewColumn Header="CPU核心" 
+                                  DisplayMemberBinding="{Binding EnabledCores}" 
+                                  Width="300"/>
+                </GridView>
+            </ListView.View>
+        </ListView>
     </Grid>
 </Window>
