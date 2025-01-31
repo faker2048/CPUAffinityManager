@@ -1,15 +1,7 @@
-using CommunityToolkit.Mvvm.ComponentModel;
-
 namespace _;
 
-public partial class MonitoredProcess : ObservableObject
+public class MonitoredProcess
 {
-    [ObservableProperty]
-    private int _processId;
-
-    [ObservableProperty]
-    private string _processName = string.Empty;
-
-    [ObservableProperty]
-    private string _enabledCores = string.Empty;
-} 
+    public string ProcessName = string.Empty;
+    public string CcdName = string.Empty;
+}

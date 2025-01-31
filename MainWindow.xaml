@@ -6,44 +6,59 @@
         xmlns:local="clr-namespace:_"
         mc:Ignorable="d"
         Title="CPU亲和性管理器" Height="450" Width="800">
-    <Grid Margin="20">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-        </Grid.RowDefinitions>
+    <Window.Resources>
+        <local:PidArrayConverter x:Key="PidArrayConverter"/>
+    </Window.Resources>
+    <DockPanel>
+        <ToolBar DockPanel.Dock="Top">
+            <Button Command="{Binding AddCcdCommand}">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="添加CCD组" Margin="3"/>
+                </StackPanel>
+            </Button>
+            <Button Command="{Binding AddProcessCommand}">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="添加进程" Margin="3"/>
+                </StackPanel>
+            </Button>
+        </ToolBar>
 
-        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,20">
-            <TextBlock Text="进程名称：" VerticalAlignment="Center"/>
-            <TextBox Text="{Binding ProcessNameInput, UpdateSourceTrigger=PropertyChanged}"
-                     Width="200" Margin="5,0"/>
-            <Button Content="设置CPU亲和性(0-15)"
-                    Command="{Binding SetProcessAffinityCommand}"
-                    Padding="10,5"/>
-        </StackPanel>
-
-        <!-- 添加刷新按钮和监控列表 -->
-        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,10">
-            <Button Content="刷新监控列表" 
-                    Command="{Binding RefreshMonitoredProcessesCommand}"
-                    Padding="10,5"/>
-        </StackPanel>
-
-        <ListView Grid.Row="2" 
-                  ItemsSource="{Binding MonitoredProcesses}">
+        <ListView ItemsSource="{Binding MonitoredProcessListItems}">
             <ListView.View>
                 <GridView>
-                    <GridViewColumn Header="进程名称" 
-                                  DisplayMemberBinding="{Binding ProcessName}" 
-                                  Width="200"/>
-                    <GridViewColumn Header="进程ID" 
-                                  DisplayMemberBinding="{Binding ProcessId}" 
-                                  Width="80"/>
-                    <GridViewColumn Header="CPU核心" 
-                                  DisplayMemberBinding="{Binding EnabledCores}" 
-                                  Width="300"/>
+                    <GridViewColumn Header="进程名" Width="200">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding ProcessName}"/>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                    <GridViewColumn Header="CCD组" Width="150">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding CcdName}"/>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                    <GridViewColumn Header="运行中的PID" Width="200">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding RunningPiDs, Converter={StaticResource PidArrayConverter}}"/>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                    <GridViewColumn Width="100">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate>
+                                <Button Content="删除" 
+                                        Command="{Binding DataContext.RemoveProcessCommand, 
+                                                  RelativeSource={RelativeSource AncestorType=ListView}}"
+                                        CommandParameter="{Binding ProcessName}"/>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
                 </GridView>
             </ListView.View>
         </ListView>
-    </Grid>
+    </DockPanel>
 </Window>

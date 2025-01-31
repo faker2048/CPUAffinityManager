@@ -4,146 +4,108 @@ using System.Linq;
 using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using System.IO;
+using System.Diagnostics;
+using System.Timers;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace _;
 
+public partial class MonitoredProcessListItem : ObservableObject
+{
+    [ObservableProperty]
+    private string _processName = string.Empty;
+
+    [ObservableProperty]
+    private string _ccdName = string.Empty;
+
+    [ObservableProperty]
+    private int[] _runningPiDs = Array.Empty<int>();
+}
+
 public partial class MainViewModel : ObservableObject
 {
-    private readonly IProcessAffinityService _processService;
+    private readonly ProcessAffinityService _processAffinityService;
+    private readonly MonitoredProcessService _monitoredProcessService;
+    private readonly CcdService _ccdService;
+    private readonly IServiceProvider _serviceProvider;
 
     [ObservableProperty]
-    private string _processNameInput = string.Empty;
+    private ObservableCollection<MonitoredProcessListItem> _monitoredProcessListItems = new();
 
-    [ObservableProperty]
-    private string _statusMessage = string.Empty;
-
-    [ObservableProperty]
-    private ObservableCollection<MonitoredProcess> _monitoredProcesses = new();
-
-    public MainViewModel(IProcessAffinityService processService)
+    public MainViewModel(
+        MonitoredProcessService monitoredProcessService,
+        ProcessAffinityService processAffinityService,
+        CcdService ccdService,
+        IServiceProvider serviceProvider)
     {
-        _processService = processService;
+        _monitoredProcessService = monitoredProcessService;
+        _processAffinityService = processAffinityService;
+        _ccdService = ccdService;
+        _serviceProvider = serviceProvider;
+
+        UpdateMonitoredProcesses();
+    }
+
+    private void UpdateMonitoredProcesses()
+    {
+        MonitoredProcessListItems = new ObservableCollection<MonitoredProcessListItem>(
+            _monitoredProcessService.MonitoredProcesses.Values.Select(p => new MonitoredProcessListItem
+            {
+                ProcessName = p.ProcessName,
+                CcdName = p.CcdName,
+                RunningPiDs = Array.Empty<int>()
+            }));
     }
 
     [RelayCommand]
-    private void SetProcessAffinity()
+    private void AddCcd()
     {
-        try
+        var dialog = new AddCcdWindow();
+        var vm = new AddCcdViewModel(_ccdService, dialog);
+        dialog.DataContext = vm;
+        if (dialog.ShowDialog() == true)
         {
-            if (string.IsNullOrWhiteSpace(ProcessNameInput))
-            {
-                StatusMessage = "请输入进程名称";
-                return;
-            }
-
-            // 设置亲和性掩码 (0-15)
-            var cores = Enumerable.Range(0, 16).ToArray();
-            long affinityMask = ProcessAffinityService.CreateAffinityMask(cores);
-
-            var result = _processService.SetAffinityByName(ProcessNameInput, affinityMask);
-            StatusMessage = result.Message;
-
-            if (result.Success)
-            {
-                var enabledCores = ProcessAffinityService.GetEnabledCores(affinityMask);
-                StatusMessage += $"\n已启用的CPU核心：{string.Join(", ", enabledCores)}";
-
-                // 添加到监控列表
-                var processes = _processService.GetRunningProcesses()
-                    .Where(p => p.ProcessName.Equals(ProcessNameInput, StringComparison.OrdinalIgnoreCase));
-
-                foreach (var process in processes)
-                {
-                    var monitoredProcess = new MonitoredProcess
-                    {
-                        ProcessId = process.ProcessId,
-                        ProcessName = process.ProcessName,
-                        EnabledCores = string.Join(", ", enabledCores)
-                    };
-
-                    if (!MonitoredProcesses.Any(p => p.ProcessId == process.ProcessId))
-                    {
-                        MonitoredProcesses.Add(monitoredProcess);
-                    }
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            StatusMessage = $"操作失败：{ex.Message}";
+            UpdateMonitoredProcesses();
         }
     }
 
     [RelayCommand]
-    private void CheckProcessAffinity()
+    private void AddProcess()
     {
-        try
+        var vm = _serviceProvider.GetRequiredService<AddProcessViewModel>();
+        var dialog = new AddProcessWindow(vm);
+
+        var result = dialog.ShowDialog();
+        Console.WriteLine($"[MainViewModel] 对话框结果：{result}, SelectedProcess: {vm.SelectedProcess?.ProcessName}, SelectedCcd: {vm.SelectedCcd}");
+        if (result == true && vm.SelectedProcess != null && vm.SelectedCcd.Value != null)
         {
-            if (string.IsNullOrWhiteSpace(ProcessNameInput))
+            Console.WriteLine($"[MainViewModel] 开始添加进程：{vm.SelectedProcess.ProcessName}，CCD组：{vm.SelectedCcd.Key}");
+            var process = new MonitoredProcess
             {
-                StatusMessage = "请输入进程名称";
-                return;
-            }
-
-            var processes = _processService.GetRunningProcesses()
-                .Where(p => p.ProcessName.Contains(ProcessNameInput, StringComparison.OrdinalIgnoreCase))
-                .ToList();
-
-            if (!processes.Any())
-            {
-                StatusMessage = $"未找到包含 '{ProcessNameInput}' 的进程";
-                return;
-            }
-
-            var results = new List<string>();
-            foreach (var process in processes)
-            {
-                var affinity = _processService.GetAffinity(process.ProcessId);
-                if (affinity.Success)
-                {
-                    var cores = ProcessAffinityService.GetEnabledCores(affinity.AffinityMask);
-                    results.Add($"进程 {process.ProcessName}({process.ProcessId}) 使用的CPU核心：{string.Join(", ", cores)}");
-                }
-                else
-                {
-                    results.Add($"进程 {process.ProcessName}({process.ProcessId}): {affinity.Message}");
-                }
-            }
-
-            StatusMessage = string.Join("\n", results);
+                ProcessName = vm.SelectedProcess.ProcessName,
+                CcdName = vm.SelectedCcd.Key
+            };
+            _monitoredProcessService.AddMonitoredProcess(process);
+            UpdateMonitoredProcesses();
         }
-        catch (Exception ex)
+        else
         {
-            StatusMessage = $"操作失败：{ex.Message}";
+            Console.WriteLine("[MainViewModel] 添加进程取消或数据无效");
         }
     }
 
     [RelayCommand]
-    private void RefreshMonitoredProcesses()
+    private void RemoveProcess(string processName)
     {
-        try
+        if (MessageBox.Show(
+            $"确定要删除进程 {processName} 吗？",
+            "确认删除",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Question) == MessageBoxResult.Yes)
         {
-            var updatedProcesses = new List<MonitoredProcess>();
-
-            foreach (var process in MonitoredProcesses.ToList())
-            {
-                var affinity = _processService.GetAffinity(process.ProcessId);
-                if (affinity.Success)
-                {
-                    var cores = ProcessAffinityService.GetEnabledCores(affinity.AffinityMask);
-                    process.EnabledCores = string.Join(", ", cores);
-                }
-                else
-                {
-                    MonitoredProcesses.Remove(process);
-                }
-            }
-
-            StatusMessage = "监控列表已刷新";
-        }
-        catch (Exception ex)
-        {
-            StatusMessage = $"刷新失败：{ex.Message}";
+            _monitoredProcessService.RemoveMonitoredProcess(processName);
+            UpdateMonitoredProcesses();
         }
     }
-} 
+}
