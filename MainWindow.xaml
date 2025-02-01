@@ -6,9 +6,7 @@
         xmlns:local="clr-namespace:_"
         mc:Ignorable="d"
         Title="CPU亲和性管理器" Height="450" Width="800">
-    <Window.Resources>
-        <local:PidArrayConverter x:Key="PidArrayConverter"/>
-    </Window.Resources>
+
     <DockPanel>
         <ToolBar DockPanel.Dock="Top">
             <Button Command="{Binding AddProcessCommand}">
@@ -40,10 +38,10 @@
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
-                    <GridViewColumn Header="运行中的PID" Width="200">
+                    <GridViewColumn Header="当前 Affinity" Width="200">
                         <GridViewColumn.CellTemplate>
                             <DataTemplate>
-                                <TextBlock Text="{Binding RunningPiDs, Converter={StaticResource PidArrayConverter}}"/>
+                                <TextBlock Text="{Binding ProcessAffinityHumanReadable}"/>
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>

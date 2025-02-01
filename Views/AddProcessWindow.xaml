@@ -13,10 +13,12 @@
 
         <TextBox x:Name="SearchBox" 
                  Grid.Row="0"
+                 Height="35"
                  Margin="0,0,0,10"
                  Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}">
             <TextBox.Style>
                 <Style TargetType="TextBox">
+                    <Setter Property="VerticalContentAlignment" Value="Center"/>
                     <Style.Triggers>
                         <Trigger Property="Text" Value="">
                             <Setter Property="Background">
@@ -24,7 +26,8 @@
                                     <VisualBrush Stretch="None" AlignmentX="Left">
                                         <VisualBrush.Visual>
                                             <TextBlock Text="搜索进程..." 
-                                                     Foreground="Gray"/>
+                                                     Foreground="Gray"
+                                                     VerticalAlignment="Center"/>
                                         </VisualBrush.Visual>
                                     </VisualBrush>
                                 </Setter.Value>
@@ -37,24 +40,48 @@
 
         <Grid Grid.Row="1" Margin="0,0,0,10">
             <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
+
+            <TextBlock Grid.Column="0"
+                       Text="选择CCD组:"
+                       VerticalAlignment="Center"
+                       Margin="0,0,10,0"/>
             
-            <ComboBox Grid.Column="0"
+            <ComboBox Grid.Column="1"
+                      MinWidth="120"
+                      Height="30"
+                      VerticalAlignment="Center"
                       ItemsSource="{Binding AvailableCcds}"
                       SelectedItem="{Binding SelectedCcd}">
                 <ComboBox.ItemTemplate>
                     <DataTemplate>
-                        <TextBlock Text="{Binding Key}"/>
+                        <TextBlock Text="{Binding Key}"
+                                 VerticalAlignment="Center"
+                                 FontSize="14"/>
                     </DataTemplate>
                 </ComboBox.ItemTemplate>
             </ComboBox>
             
-            <Button Grid.Column="1"
+            <Button Grid.Column="2"
+                    Height="30"
+                    Padding="10,0"
                     Margin="10,0,0,0"
+                    VerticalAlignment="Center"
                     Command="{Binding AddCcdCommand}">
-                <TextBlock Text="添加CCD组" Margin="3"/>
+                <TextBlock Text="添加CCD组"/>
+            </Button>
+
+            <Button Grid.Column="3"
+                    Height="30"
+                    Padding="10,0"
+                    Margin="10,0,0,0"
+                    VerticalAlignment="Center"
+                    Command="{Binding EditConfigCommand}">
+                <TextBlock Text="编辑配置文件"/>
             </Button>
         </Grid>
 
@@ -67,14 +94,8 @@
                     <GridViewColumn Header="进程名" Width="200">
                         <GridViewColumn.CellTemplate>
                             <DataTemplate>
-                                <TextBlock Text="{Binding ProcessName}"/>
-                            </DataTemplate>
-                        </GridViewColumn.CellTemplate>
-                    </GridViewColumn>
-                    <GridViewColumn Header="PID" Width="100">
-                        <GridViewColumn.CellTemplate>
-                            <DataTemplate>
-                                <TextBlock Text="{Binding ProcessId}"/>
+                                <TextBlock Text="{Binding ProcessName}"
+                                         FontSize="14"/>
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>

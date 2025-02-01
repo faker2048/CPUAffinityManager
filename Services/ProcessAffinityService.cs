@@ -117,6 +117,48 @@ public class ProcessAffinityService
     }
 
     /// <summary>
+    /// 将进程的 CPU 亲和性掩码转换为人类可读的格式
+    /// </summary>
+    /// <param name="processId">目标进程的 ID</param>
+    /// <returns>格式化后的 CPU 亲和性字符串，例如："0-7, 16-23"</returns>
+    public static string GetProcessAffinityHumanReadable(int processId)
+    {
+        var (success, affinityMask, processName, message) = GetAffinity(processId);
+        if (!success)
+        {
+            return "获取失败";
+        }
+        return FormatAffinityMaskToHumanReadable(affinityMask);
+    }
+
+    public static string GetProcessAffinityHumanReadableByName(string processName)
+    {
+        try
+        {
+            var processes = Process.GetProcessesByName(processName);
+            if (!processes.Any())
+            {
+                return "进程未运行";
+            }
+
+            var affinityMasks = processes.Select(p => p.ProcessorAffinity.ToInt64()).Distinct().ToList();
+            if (affinityMasks.Count == 1)
+            {
+                return FormatAffinityMaskToHumanReadable(affinityMasks[0]);
+            }
+            else
+            {
+                return $"多个进程({processes.Length}个)亲和性不一致";
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[ProcessAffinityService] 获取进程亲和性时发生错误：{ex.Message}");
+            return "获取失败";
+        }
+    }
+
+    /// <summary>
     /// 为单个进程设置CPU亲和性
     /// </summary>
     private static (bool Success, string Message) SetAffinityForProcess(Process process, long affinityMask)
@@ -183,5 +225,40 @@ public class ProcessAffinityService
     public static int GetProcessorCount()
     {
         return Environment.ProcessorCount;
+    }
+
+    private static string FormatAffinityMaskToHumanReadable(long affinityMask)
+    {
+        var cores = new List<int>();
+        for (int i = 0; i < 64; i++)
+        {
+            if ((affinityMask & (1L << i)) != 0)
+            {
+                cores.Add(i);
+            }
+        }
+
+
+        if (cores.Count == 0)
+        {
+            return "无核心绑定";
+        }
+
+        var ranges = new List<string>();
+        int start = cores[0];
+        int prev = cores[0];
+
+        for (int i = 1; i < cores.Count; i++)
+        {
+            if (cores[i] != prev + 1)
+            {
+                ranges.Add(start == prev ? $"{start}" : $"{start}-{prev}");
+                start = cores[i];
+            }
+            prev = cores[i];
+        }
+        
+        ranges.Add(start == prev ? $"{start}" : $"{start}-{prev}");
+        return string.Join(", ", ranges);
     }
 }
