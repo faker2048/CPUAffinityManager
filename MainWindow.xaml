@@ -5,58 +5,70 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:_"
         mc:Ignorable="d"
-        Title="CPU亲和性管理器" Height="450" Width="800">
+        Title="CPU亲和性管理器"
+        Height="450"
+        Width="800">
 
     <DockPanel>
-        <ToolBar DockPanel.Dock="Top">
-            <Button Command="{Binding AddProcessCommand}">
-                <StackPanel Orientation="Horizontal">
-                    <TextBlock Text="添加规则" Margin="3"/>
-                </StackPanel>
-            </Button>
-            <Button Command="{Binding ApplyCcdRulesCommand}">
-                <StackPanel Orientation="Horizontal">
-                    <TextBlock Text="应用规则" Margin="3"/>
-                </StackPanel>
-            </Button>
-        </ToolBar>
+        <DockPanel Margin="10">
+            <StackPanel DockPanel.Dock="Top"
+                    Orientation="Horizontal"
+                    Margin="0,0,0,10">
+                <Button Command="{Binding AddProcessCommand}"
+                        Padding="8,3"
+                        Margin="0,0,10,0">
+                    <TextBlock Text="添加规则"/>
+                </Button>
+                <Button Command="{Binding ApplyCcdRulesCommand}"
+                        Padding="8,3">
+                    <TextBlock Text="应用规则"/>
+                </Button>
+                <CheckBox Content="自动应用规则"
+                          VerticalAlignment="Center"
+                          Margin="20,0,0,0"
+                          IsChecked="{Binding IsAutoApplyRules}"/>
+            </StackPanel>
 
-        <ListView ItemsSource="{Binding MonitoredProcessListItems}">
-            <ListView.View>
-                <GridView>
-                    <GridViewColumn Header="进程名" Width="200">
-                        <GridViewColumn.CellTemplate>
-                            <DataTemplate>
-                                <TextBlock Text="{Binding ProcessName}"/>
-                            </DataTemplate>
-                        </GridViewColumn.CellTemplate>
-                    </GridViewColumn>
-                    <GridViewColumn Header="CCD组" Width="150">
-                        <GridViewColumn.CellTemplate>
-                            <DataTemplate>
-                                <TextBlock Text="{Binding CcdName}"/>
-                            </DataTemplate>
-                        </GridViewColumn.CellTemplate>
-                    </GridViewColumn>
-                    <GridViewColumn Header="当前 Affinity" Width="200">
-                        <GridViewColumn.CellTemplate>
-                            <DataTemplate>
-                                <TextBlock Text="{Binding ProcessAffinityHumanReadable}"/>
-                            </DataTemplate>
-                        </GridViewColumn.CellTemplate>
-                    </GridViewColumn>
-                    <GridViewColumn Width="100">
-                        <GridViewColumn.CellTemplate>
-                            <DataTemplate>
-                                <Button Content="删除" 
-                                        Command="{Binding DataContext.RemoveProcessCommand, 
-                                                  RelativeSource={RelativeSource AncestorType=ListView}}"
-                                        CommandParameter="{Binding ProcessName}"/>
-                            </DataTemplate>
-                        </GridViewColumn.CellTemplate>
-                    </GridViewColumn>
-                </GridView>
-            </ListView.View>
-        </ListView>
+            <ListView ItemsSource="{Binding MonitoredProcessListItems}">
+                <ListView.View>
+                    <GridView>
+                        <GridViewColumn Header="进程名"
+                                Width="200">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding ProcessName}"/>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
+                        <GridViewColumn Header="CCD组"
+                                Width="150">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding CcdName}"/>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
+                        <GridViewColumn Header="当前 Affinity"
+                                Width="200">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding ProcessAffinityHumanReadable}"/>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
+                        <GridViewColumn Width="100">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate>
+                                    <Button Content="删除"
+                                            Command="{Binding DataContext.RemoveProcessCommand, 
+                                                        RelativeSource={RelativeSource AncestorType=ListView}}"
+                                            CommandParameter="{Binding ProcessName}"/>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
+                    </GridView>
+                </ListView.View>
+            </ListView>
+        </DockPanel>
     </DockPanel>
 </Window>

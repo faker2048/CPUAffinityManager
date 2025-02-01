@@ -21,6 +21,9 @@ public partial class MonitoredProcessListItem : ObservableObject
 
     [ObservableProperty]
     private string _processAffinityHumanReadable = string.Empty;
+
+    [ObservableProperty]
+    private bool _isAutoApplyRules = false;
 }
 
 public partial class MainViewModel : ObservableObject
