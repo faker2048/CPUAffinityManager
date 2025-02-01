@@ -6,7 +6,6 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using System.IO;
 using System.Diagnostics;
-using System.Timers;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace _;
@@ -47,6 +46,16 @@ public partial class MainViewModel : ObservableObject
         _processAffinityService = processAffinityService;
         _ccdService = ccdService;
         _serviceProvider = serviceProvider;
+
+        _isAutoApplyRules = _monitoredProcessService.IsAutoApplyRules;
+
+        this.PropertyChanged += (s, e) =>
+        {
+            if (e.PropertyName == nameof(IsAutoApplyRules))
+            {
+                _monitoredProcessService.IsAutoApplyRules = IsAutoApplyRules;
+            }
+        };
 
         UpdateMonitoredProcesses();
     }
@@ -130,8 +139,11 @@ public partial class MainViewModel : ObservableObject
             }
 
             var affinityMask = ProcessAffinityService.CreateAffinityMask(ccd.Cores);
-            _processAffinityService.SetAffinityByName(processName, affinityMask);
+            var result = ProcessAffinityService.SetAffinityByName(processName, affinityMask);
+            if (!result.Success)
+            {
+                Console.WriteLine($"[MainViewModel] 设置CPU亲和性失败：{result.Message}");
+            }
         }
-
     }
 }

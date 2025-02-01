@@ -12,15 +12,24 @@ public class MonitoredProcessService
     private Dictionary<string, MonitoredProcess> _monitoredProcessesCache; // <ProcessName, MonitoredProcess>
     public Dictionary<string, MonitoredProcess> MonitoredProcesses => _monitoredProcessesCache;
     private string _storePath;
+    private readonly ProcessMonitorService _processMonitorService;
+    private readonly CcdService _ccdService;
+    public bool IsAutoApplyRules { get; set; }
 
-    public MonitoredProcessService()
+    public MonitoredProcessService(ProcessMonitorService processMonitorService, CcdService ccdService)
     {
+        _ccdService = ccdService;
+        _processMonitorService = processMonitorService;
+        _processMonitorService.SubscribeToProcessStarted(OnProcessStarted);
+        _processMonitorService.SubscribeToProcessEnded(OnProcessEnded);
+
         _storePath = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
             "CPUAffinityManager",
             "monitored_processes.json"
         );
         _monitoredProcessesCache = LoadMonitoredProcesses(_storePath);
+
     }
 
     private static Dictionary<string, MonitoredProcess> LoadMonitoredProcesses(string storePath)
@@ -119,5 +128,33 @@ public class MonitoredProcessService
         {
             Console.WriteLine($"[MonitoredProcessService] 删除失败：未找到进程 {processName}");
         }
+    }
+
+    private void OnProcessStarted(int processId, string processName)
+    {
+        if (!IsAutoApplyRules || !MonitoredProcesses.ContainsKey(processName))
+        {
+            return;
+        }
+
+        var monitoredProcess = MonitoredProcesses[processName];
+        var ccdConfig = _ccdService.Ccds.GetValueOrDefault(monitoredProcess.CcdName);
+        if (ccdConfig == null)
+        {
+            Console.WriteLine($"[MonitoredProcessService] 未找到CCD配置：{monitoredProcess.CcdName}");
+            return;
+        }
+
+        var affinityMask = ProcessAffinityService.CreateAffinityMask(ccdConfig.Cores.ToArray());
+        var result = ProcessAffinityService.SetAffinityById(processId, affinityMask);
+        if (!result.Success)
+        {
+            Console.WriteLine($"[MonitoredProcessService] 设置CPU亲和性失败：{result.Message}");
+        }
+    }
+
+    private void OnProcessEnded(int processId)
+    {
+
     }
 }

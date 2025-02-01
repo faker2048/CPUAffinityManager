@@ -26,7 +26,7 @@ public class ProcessAffinityService
     /// <param name="processName">进程名称（不含.exe）</param>
     /// <param name="affinityMask">CPU亲和性掩码</param>
     /// <returns>操作结果，包含成功和失败信息</returns>
-    public (bool Success, string Message) SetAffinityByName(string processName, long affinityMask)
+    public static (bool Success, string Message) SetAffinityByName(string processName, long affinityMask)
     {
         Console.WriteLine($"[ProcessAffinityService] 尝试设置进程亲和性，进程名：{processName}，掩码：{affinityMask:X}");
         try
@@ -69,7 +69,7 @@ public class ProcessAffinityService
     /// <param name="processId">进程ID</param>
     /// <param name="affinityMask">CPU亲和性掩码</param>
     /// <returns>操作结果，包含成功和失败信息</returns>
-    public (bool Success, string Message) SetAffinityById(int processId, long affinityMask)
+    public static (bool Success, string Message) SetAffinityById(int processId, long affinityMask)
     {
         Console.WriteLine($"[ProcessAffinityService] 尝试设置进程亲和性，进程ID：{processId}，掩码：{affinityMask:X}");
         try
@@ -257,7 +257,7 @@ public class ProcessAffinityService
             }
             prev = cores[i];
         }
-        
+
         ranges.Add(start == prev ? $"{start}" : $"{start}-{prev}");
         return string.Join(", ", ranges);
     }

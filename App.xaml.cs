@@ -20,6 +20,7 @@ public partial class App : Application
         services.AddSingleton<MainWindow>();
         services.AddSingleton<CcdService>();
         services.AddTransient<AddProcessViewModel>();
+        services.AddSingleton<ProcessMonitorService>();
 
         var serviceProvider = services.BuildServiceProvider();
         var mainWindow = serviceProvider.GetRequiredService<MainWindow>();
