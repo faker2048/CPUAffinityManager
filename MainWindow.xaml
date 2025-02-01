@@ -11,14 +11,14 @@
     </Window.Resources>
     <DockPanel>
         <ToolBar DockPanel.Dock="Top">
-            <Button Command="{Binding AddCcdCommand}">
-                <StackPanel Orientation="Horizontal">
-                    <TextBlock Text="添加CCD组" Margin="3"/>
-                </StackPanel>
-            </Button>
             <Button Command="{Binding AddProcessCommand}">
                 <StackPanel Orientation="Horizontal">
-                    <TextBlock Text="添加进程" Margin="3"/>
+                    <TextBlock Text="添加规则" Margin="3"/>
+                </StackPanel>
+            </Button>
+            <Button Command="{Binding ApplyCcdRulesCommand}">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="应用规则" Margin="3"/>
                 </StackPanel>
             </Button>
         </ToolBar>

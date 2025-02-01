@@ -59,18 +59,6 @@ public partial class MainViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private void AddCcd()
-    {
-        var dialog = new AddCcdWindow();
-        var vm = new AddCcdViewModel(_ccdService, dialog);
-        dialog.DataContext = vm;
-        if (dialog.ShowDialog() == true)
-        {
-            UpdateMonitoredProcesses();
-        }
-    }
-
-    [RelayCommand]
     private void AddProcess()
     {
         var vm = _serviceProvider.GetRequiredService<AddProcessViewModel>();
@@ -107,5 +95,26 @@ public partial class MainViewModel : ObservableObject
             _monitoredProcessService.RemoveMonitoredProcess(processName);
             UpdateMonitoredProcesses();
         }
+    }
+
+    [RelayCommand]
+    private void ApplyCcdRules()
+    {
+        foreach (var item in MonitoredProcessListItems)
+        {
+            var ccdName = item.CcdName;
+            var processName = item.ProcessName;
+            var runningPiDs = item.RunningPiDs;
+
+            if (!_ccdService.Ccds.TryGetValue(ccdName, out var ccd))
+            {
+                Console.WriteLine($"[MainViewModel] CCD组 {ccdName} 不存在");
+                continue;
+            }
+
+            var affinityMask = ProcessAffinityService.CreateAffinityMask(ccd.Cores);
+            _processAffinityService.SetAffinityByName(processName, affinityMask);
+        }
+
     }
 }

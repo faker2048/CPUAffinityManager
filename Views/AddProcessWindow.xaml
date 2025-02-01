@@ -35,16 +35,28 @@
             </TextBox.Style>
         </TextBox>
 
-        <ComboBox Grid.Row="1"
-                  Margin="0,0,0,10"
-                  ItemsSource="{Binding AvailableCcds}"
-                  SelectedItem="{Binding SelectedCcd}">
-            <ComboBox.ItemTemplate>
-                <DataTemplate>
-                    <TextBlock Text="{Binding Key}"/>
-                </DataTemplate>
-            </ComboBox.ItemTemplate>
-        </ComboBox>
+        <Grid Grid.Row="1" Margin="0,0,0,10">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            
+            <ComboBox Grid.Column="0"
+                      ItemsSource="{Binding AvailableCcds}"
+                      SelectedItem="{Binding SelectedCcd}">
+                <ComboBox.ItemTemplate>
+                    <DataTemplate>
+                        <TextBlock Text="{Binding Key}"/>
+                    </DataTemplate>
+                </ComboBox.ItemTemplate>
+            </ComboBox>
+            
+            <Button Grid.Column="1"
+                    Margin="10,0,0,0"
+                    Command="{Binding AddCcdCommand}">
+                <TextBlock Text="添加CCD组" Margin="3"/>
+            </Button>
+        </Grid>
 
         <ListView Grid.Row="2"
                   Margin="0,0,0,10"

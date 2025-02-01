@@ -92,5 +92,14 @@ public partial class AddProcessViewModel : ObservableObject
         }
     }
 
+    [RelayCommand]
+    private void AddCcd()
+    {
+        var dialog = new AddCcdWindow();
+        var vm = new AddCcdViewModel(_ccdService, dialog);
+        dialog.DataContext = vm;
+        dialog.ShowDialog();
+    }
+
     public record ProcessInfo(string ProcessName);
 } 
