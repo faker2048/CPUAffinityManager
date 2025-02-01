@@ -23,6 +23,11 @@ public class CcdService
         _ccdCache = LoadCcds();
     }
 
+    public void ReloadCcds()
+    {
+        _ccdCache = LoadCcds();
+    }
+
     /// <summary>
     /// 获取所有 CCD 配置
     /// </summary>

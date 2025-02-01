@@ -134,13 +134,24 @@ public partial class AddProcessViewModel : ObservableObject
                 return;
             }
 
-            var startInfo = new ProcessStartInfo
+            var editorWindow = new ConfigEditorWindow();
+            var vm = new ConfigEditorViewModel(editorWindow, configPath);
+            editorWindow.DataContext = vm;
+            editorWindow.Owner = _window;
+            
+            var result = editorWindow.ShowDialog();
+            if (result == true)
             {
-                FileName = configPath,
-                UseShellExecute = true,
-                Verb = "open"
-            };
-            Process.Start(startInfo);
+                // 配置已保存，刷新 CCD 列表
+                _ccdService.ReloadCcds();
+                AvailableCcds = _ccdService.Ccds;
+                
+                // 如果没有选中的 CCD 组，且有可用的 CCD 组，则选中第一个
+                if (SelectedCcd == null && _ccdService.Ccds.Any())
+                {
+                    SelectedCcd = _ccdService.Ccds.First();
+                }
+            }
         }
         catch (Exception ex)
         {
