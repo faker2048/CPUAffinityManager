@@ -1,12 +1,12 @@
 using System.Collections.ObjectModel;
-using System.Linq;
-using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
-using System.Windows;
 using System.Diagnostics;
 using System.IO;
+using System.Windows;
+using _.Services;
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 
-namespace _;
+namespace @_.ViewModels;
 
 public partial class AddProcessViewModel : ObservableObject
 {
@@ -60,7 +60,7 @@ public partial class AddProcessViewModel : ObservableObject
             .Where(p => !string.IsNullOrEmpty(p.ProcessName))
             .Select(p => new ProcessInfo(p.ProcessName))
             .Where(p => string.IsNullOrEmpty(SearchText) || 
-                       p.ProcessName.Contains(SearchText, StringComparison.OrdinalIgnoreCase))
+                       p.ProcessName.Contains((string)SearchText, StringComparison.OrdinalIgnoreCase))
             .OrderBy(p => p.ProcessName)
             .DistinctBy(p => p.ProcessName);
 
@@ -103,7 +103,7 @@ public partial class AddProcessViewModel : ObservableObject
     private void AddCcd()
     {
         var dialog = new AddCcdWindow();
-        var vm = new AddCcdViewModel(_ccdService, dialog);
+        var vm = new ViewModels.AddCcdViewModel(_ccdService, dialog);
         dialog.DataContext = vm;
         var result = dialog.ShowDialog();
         

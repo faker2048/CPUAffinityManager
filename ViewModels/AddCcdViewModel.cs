@@ -1,9 +1,10 @@
 using System.Collections.ObjectModel;
+using System.Windows;
+using _.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using System.Windows;
 
-namespace _;
+namespace @_.ViewModels;
 
 public partial class AddCcdViewModel : ObservableObject
 {

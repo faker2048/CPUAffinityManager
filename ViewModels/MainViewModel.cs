@@ -1,14 +1,12 @@
-using System;
 using System.Collections.ObjectModel;
-using System.Linq;
 using System.Windows;
+using _.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using System.IO;
-using System.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
+using _.Utils;
 
-namespace _;
+namespace @_.ViewModels;
 
 public partial class MonitoredProcessListItem : ObservableObject
 {
@@ -23,12 +21,13 @@ public partial class MonitoredProcessListItem : ObservableObject
 
 }
 
-public partial class MainViewModel : ObservableObject
+public partial class MainViewModel : ObservableObject, IDisposable
 {
     private readonly ProcessAffinityService _processAffinityService;
     private readonly MonitoredProcessService _monitoredProcessService;
     private readonly CcdService _ccdService;
     private readonly IServiceProvider _serviceProvider;
+    private readonly Debouncer _updateDebouncer;
 
     [ObservableProperty]
     private ObservableCollection<MonitoredProcessListItem> _monitoredProcessListItems = new();
@@ -57,10 +56,35 @@ public partial class MainViewModel : ObservableObject
             }
         };
 
+        _updateDebouncer = new Debouncer(DoUpdateMonitoredProcesses, 1000);
+
+        _monitoredProcessService.MonitoredProcessStarted += (processInfo) =>
+        {
+            Console.WriteLine($"[MainViewModel] 进程启动：{processInfo.ProcessName}");
+            UpdateMonitoredProcesses();
+        };
+
+        _monitoredProcessService.MonitoredProcessEnded += (processInfo) => 
+        {
+            Console.WriteLine($"[MainViewModel] 进程结束：{processInfo.ProcessName}");
+            UpdateMonitoredProcesses();
+        };
+
+        _monitoredProcessService.MonitoredProcessAffinityChanged += (processInfo) =>
+        {
+            Console.WriteLine($"[MainViewModel] 进程CPU亲和性变化：{processInfo.ProcessName}");
+            UpdateMonitoredProcesses();
+        };
+
         UpdateMonitoredProcesses();
     }
 
     private void UpdateMonitoredProcesses()
+    {
+        _updateDebouncer.Debounce();
+    }
+
+    private void DoUpdateMonitoredProcesses()
     {
         MonitoredProcessListItems = new ObservableCollection<MonitoredProcessListItem>(
             _monitoredProcessService.MonitoredProcesses.Values.Select(p =>
@@ -145,5 +169,10 @@ public partial class MainViewModel : ObservableObject
                 Console.WriteLine($"[MainViewModel] 设置CPU亲和性失败：{result.Message}");
             }
         }
+    }
+
+    public void Dispose()
+    {
+        _updateDebouncer.Dispose();
     }
 }

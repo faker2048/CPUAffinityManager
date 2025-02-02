@@ -1,4 +1,5 @@
 ﻿using System.Windows;
+using _.Services;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace _;
@@ -16,10 +17,10 @@ public partial class App : Application
         
         services.AddSingleton<MonitoredProcessService>();
         services.AddSingleton<ProcessAffinityService>();
-        services.AddSingleton<MainViewModel>();
+        services.AddSingleton<ViewModels.MainViewModel>();
         services.AddSingleton<MainWindow>();
         services.AddSingleton<CcdService>();
-        services.AddTransient<AddProcessViewModel>();
+        services.AddTransient<ViewModels.AddProcessViewModel>();
         services.AddSingleton<ProcessMonitorService>();
 
         var serviceProvider = services.BuildServiceProvider();

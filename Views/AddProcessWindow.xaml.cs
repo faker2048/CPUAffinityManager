@@ -4,7 +4,7 @@ namespace _;
 
 public partial class AddProcessWindow : Window
 {
-    public AddProcessWindow(AddProcessViewModel viewModel)
+    public AddProcessWindow(ViewModels.AddProcessViewModel viewModel)
     {
         InitializeComponent();
         DataContext = viewModel;

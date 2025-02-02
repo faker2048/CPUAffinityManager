@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:_"
         mc:Ignorable="d"
-        Title="CPU亲和性管理器"
+        Title="CPUAffinityManager"
         Height="450"
         Width="800">
 

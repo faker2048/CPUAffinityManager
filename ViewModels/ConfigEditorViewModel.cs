@@ -3,7 +3,7 @@ using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
-namespace _;
+namespace @_.ViewModels;
 
 public partial class ConfigEditorViewModel : ObservableObject
 {
@@ -38,7 +38,7 @@ public partial class ConfigEditorViewModel : ObservableObject
     {
         try
         {
-            File.WriteAllText(_configPath, ConfigContent);
+            File.WriteAllText(_configPath, (string?)ConfigContent);
             _window.DialogResult = true;
             _window.Close();
         }

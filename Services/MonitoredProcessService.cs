@@ -1,34 +1,37 @@
-using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Windows;
 using Newtonsoft.Json;
 
-namespace _;
+namespace @_.Services;
 
 public class MonitoredProcessService
 {
-    private Dictionary<string, MonitoredProcess> _monitoredProcessesCache; // <ProcessName, MonitoredProcess>
-    public Dictionary<string, MonitoredProcess> MonitoredProcesses => _monitoredProcessesCache;
-    private string _storePath;
-    private readonly ProcessMonitorService _processMonitorService;
+    public Dictionary<string, MonitoredProcess> MonitoredProcesses { get; private set; }
+
+    private readonly string _storePath;
     private readonly CcdService _ccdService;
     public bool IsAutoApplyRules { get; set; }
 
+    public event Action<ProcessInfo>? MonitoredProcessStarted;
+    public event Action<ProcessInfo>? MonitoredProcessEnded;
+    public event Action<ProcessInfo>? MonitoredProcessAffinityChanged;
+
+
+
     public MonitoredProcessService(ProcessMonitorService processMonitorService, CcdService ccdService)
+
     {
         _ccdService = ccdService;
-        _processMonitorService = processMonitorService;
-        _processMonitorService.SubscribeToProcessStarted(OnProcessStarted);
-        _processMonitorService.SubscribeToProcessEnded(OnProcessEnded);
+        processMonitorService.ProcessStarted += OnProcessStarted;
+        processMonitorService.ProcessEnded += OnProcessEnded;
+        processMonitorService.ProcessAffinityChanged += OnProcessAffinityChanged;
 
         _storePath = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
             "CPUAffinityManager",
             "monitored_processes.json"
         );
-        _monitoredProcessesCache = LoadMonitoredProcesses(_storePath);
+        MonitoredProcesses = LoadMonitoredProcesses(_storePath);
 
     }
 
@@ -101,10 +104,10 @@ public class MonitoredProcessService
             throw new ArgumentException("进程名称不能为空", nameof(monitoredProcess));
         }
 
-        var tmp = new Dictionary<string, MonitoredProcess>(_monitoredProcessesCache);
+        var tmp = new Dictionary<string, MonitoredProcess>(MonitoredProcesses);
         tmp[monitoredProcess.ProcessName] = monitoredProcess;
         SaveMonitoredProcesses(tmp);
-        _monitoredProcessesCache = tmp;
+        MonitoredProcesses = tmp;
         Console.WriteLine($"[MonitoredProcessService] 成功添加监控进程：{monitoredProcess.ProcessName}");
     }
 
@@ -117,11 +120,11 @@ public class MonitoredProcessService
             throw new ArgumentException("进程名称不能为空", nameof(processName));
         }
 
-        var tmp = new Dictionary<string, MonitoredProcess>(_monitoredProcessesCache);
+        var tmp = new Dictionary<string, MonitoredProcess>(MonitoredProcesses);
         if (tmp.Remove(processName))
         {
             SaveMonitoredProcesses(tmp);
-            _monitoredProcessesCache = tmp;
+            MonitoredProcesses = tmp;
             Console.WriteLine($"[MonitoredProcessService] 成功删除监控进程：{processName}");
         }
         else
@@ -130,31 +133,59 @@ public class MonitoredProcessService
         }
     }
 
-    private void OnProcessStarted(int processId, string processName)
+    private bool IsProcessMonitored(string processName)
     {
-        if (!IsAutoApplyRules || !MonitoredProcesses.ContainsKey(processName))
-        {
-            return;
-        }
-
-        var monitoredProcess = MonitoredProcesses[processName];
-        var ccdConfig = _ccdService.Ccds.GetValueOrDefault(monitoredProcess.CcdName);
-        if (ccdConfig == null)
-        {
-            Console.WriteLine($"[MonitoredProcessService] 未找到CCD配置：{monitoredProcess.CcdName}");
-            return;
-        }
-
-        var affinityMask = ProcessAffinityService.CreateAffinityMask(ccdConfig.Cores.ToArray());
-        var result = ProcessAffinityService.SetAffinityById(processId, affinityMask);
-        if (!result.Success)
-        {
-            Console.WriteLine($"[MonitoredProcessService] 设置CPU亲和性失败：{result.Message}");
-        }
+        return MonitoredProcesses.ContainsKey(processName);
     }
 
-    private void OnProcessEnded(int processId)
+    private void OnProcessStarted(ProcessInfo processInfo)
     {
+        if (!IsProcessMonitored(processInfo.ProcessName))
+        {
+            return;
+        }
 
+        if (IsAutoApplyRules)
+        {
+            var monitoredProcess = MonitoredProcesses[processInfo.ProcessName];
+
+            var ccdConfig = _ccdService.Ccds.GetValueOrDefault(monitoredProcess.CcdName);
+            if (ccdConfig == null)
+            {
+                Console.WriteLine($"[MonitoredProcessService] 未找到CCD配置：{monitoredProcess.CcdName}");
+                return;
+            }
+
+            var affinityMask = ProcessAffinityService.CreateAffinityMask(ccdConfig.Cores.ToArray());
+            var result = ProcessAffinityService.SetAffinityById(processInfo.ProcessId, affinityMask);
+            if (!result.Success)
+            {
+                Console.WriteLine($"[MonitoredProcessService] 设置CPU亲和性失败：{result.Message}");
+            }
+        }
+
+        MonitoredProcessStarted?.Invoke(processInfo);
+    }
+
+
+    private void OnProcessEnded(ProcessInfo processInfo)
+    {
+        if (!IsProcessMonitored(processInfo.ProcessName))
+        {
+            return;
+        }
+
+        MonitoredProcessEnded?.Invoke(processInfo);
+    }
+
+    private void OnProcessAffinityChanged(ProcessInfo processInfo)
+
+    {
+        if (!IsProcessMonitored(processInfo.ProcessName))
+        {
+            return;
+        }
+
+        MonitoredProcessAffinityChanged?.Invoke(processInfo);
     }
 }

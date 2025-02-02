@@ -1,15 +1,13 @@
 using System.IO;
 using Tomlyn;
 
-namespace _;
+namespace @_.Services;
 
 public class CcdService
 {
     private readonly string _storePath;
 
-    private Dictionary<string, CcdConfig> _ccdCache; // <ccd_name, cores>
-
-    public Dictionary<string, CcdConfig> Ccds => _ccdCache; // <ccd_name, cores>
+    public Dictionary<string, CcdConfig> Ccds { get; private set; }
 
 
     public CcdService()
@@ -20,12 +18,12 @@ public class CcdService
             "CPUAffinityManager",
             "config.toml"
         );
-        _ccdCache = LoadCcds();
+        Ccds = LoadCcds();
     }
 
     public void ReloadCcds()
     {
-        _ccdCache = LoadCcds();
+        Ccds = LoadCcds();
     }
 
     /// <summary>
@@ -126,7 +124,7 @@ public class CcdService
             var config = new TomlConfig { Ccds = ccds };
             var tomlString = Toml.FromModel(config);
             File.WriteAllText(_storePath, tomlString);
-            _ccdCache = ccds;
+            Ccds = ccds;
             Console.WriteLine($"[CcdService] 成功保存CCD配置，共 {ccds.Count} 个CCD组");
         }
         catch (Exception ex)
