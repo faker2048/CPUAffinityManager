@@ -17,13 +17,13 @@
                 <Button Command="{Binding AddProcessCommand}"
                         Padding="8,3"
                         Margin="0,0,10,0">
-                    <TextBlock Text="添加规则"/>
+                    <TextBlock Text="Add Rule"/>
                 </Button>
                 <Button Command="{Binding ApplyCcdRulesCommand}"
                         Padding="8,3">
-                    <TextBlock Text="应用规则"/>
+                    <TextBlock Text="Apply Rules"/>
                 </Button>
-                <CheckBox Content="自动应用规则"
+                <CheckBox Content="Auto Apply Rules"
                           VerticalAlignment="Center"
                           Margin="20,0,0,0"
                           IsChecked="{Binding IsAutoApplyRules}"/>
@@ -32,7 +32,7 @@
             <ListView ItemsSource="{Binding MonitoredProcessListItems}">
                 <ListView.View>
                     <GridView>
-                        <GridViewColumn Header="进程名"
+                        <GridViewColumn Header="Process Name"
                                 Width="200">
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate>
@@ -40,7 +40,7 @@
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
-                        <GridViewColumn Header="CCD组"
+                        <GridViewColumn Header="CCD Group"
                                 Width="150">
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate>
@@ -48,7 +48,7 @@
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
-                        <GridViewColumn Header="当前 Affinity"
+                        <GridViewColumn Header="Current Affinity"
                                 Width="200">
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate>
@@ -59,7 +59,7 @@
                         <GridViewColumn Width="100">
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate>
-                                    <Button Content="删除"
+                                    <Button Content="Remove"
                                             Command="{Binding DataContext.RemoveProcessCommand, 
                                                         RelativeSource={RelativeSource AncestorType=ListView}}"
                                             CommandParameter="{Binding ProcessName}"/>
