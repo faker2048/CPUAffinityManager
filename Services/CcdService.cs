@@ -12,7 +12,7 @@ public class CcdService
 
     public CcdService()
     {
-        Console.WriteLine($"[CcdService] 初始化，配置文件路径：{_storePath}");
+        Console.WriteLine($"[CcdService] Initializing, config file path: {_storePath}");
         _storePath = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
             "CPUAffinityManager",
@@ -27,94 +27,94 @@ public class CcdService
     }
 
     /// <summary>
-    /// 获取所有 CCD 配置
+    /// Get all CCD configurations
     /// </summary>
     private Dictionary<string, CcdConfig> LoadCcds()
     {
         try
         {
-            Console.WriteLine($"[CcdService] 开始加载CCD配置");
+            Console.WriteLine($"[CcdService] Starting to load CCD configuration");
             if (!File.Exists(_storePath))
             {
-                Console.WriteLine("[CcdService] 配置文件不存在，返回空配置");
+                Console.WriteLine("[CcdService] Config file does not exist, returning empty configuration");
                 return new Dictionary<string, CcdConfig>();
             }
 
             var tomlString = File.ReadAllText(_storePath);
             var model = Toml.ToModel<TomlConfig>(tomlString);
-            Console.WriteLine($"[CcdService] 成功加载CCD配置，共 {model?.Ccds?.Count ?? 0} 个CCD组");
+            Console.WriteLine($"[CcdService] Successfully loaded CCD configuration, total {model?.Ccds?.Count ?? 0} CCD groups");
             return model?.Ccds ?? new Dictionary<string, CcdConfig>();
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[CcdService] 加载CCD配置失败：{ex.Message}");
-            throw new Exception($"读取 CCD 配置失败: {ex.Message}", ex);
+            Console.WriteLine($"[CcdService] Failed to load CCD configuration: {ex.Message}");
+            throw new Exception($"Failed to read CCD configuration: {ex.Message}", ex);
         }
     }
 
 
     /// <summary>
-    /// 添加或更新 CCD 配置
+    /// Add or update CCD configuration
     /// </summary>
-    /// <param name="ccdName">CCD 名称</param>
-    /// <param name="cores">CPU 核心列表</param>
+    /// <param name="ccdName">CCD name</param>
+    /// <param name="cores">CPU core list</param>
     public void UpsertCcd(string ccdName, int[] cores)
     {
-        Console.WriteLine($"[CcdService] 尝试更新CCD组：{ccdName}，核心数：{cores.Length}");
+        Console.WriteLine($"[CcdService] Attempting to update CCD group: {ccdName}, core count: {cores.Length}");
         if (string.IsNullOrWhiteSpace(ccdName))
         {
-            Console.WriteLine("[CcdService] 更新失败：CCD名称为空");
-            throw new ArgumentException("CCD 名称不能为空", nameof(ccdName));
+            Console.WriteLine("[CcdService] Update failed: CCD name is empty");
+            throw new ArgumentException("CCD name cannot be empty", nameof(ccdName));
         }
 
         if (cores == null || cores.Length == 0)
         {
-            throw new ArgumentException("必须指定至少一个 CPU 核心", nameof(cores));
+            throw new ArgumentException("Must specify at least one CPU core", nameof(cores));
         }
 
         if (cores.Any(c => c < 0 || c > 63))
         {
-            Console.WriteLine("[CcdService] 更新失败：CPU核心编号超出范围");
-            throw new ArgumentException("CPU 核心编号必须在 0-63 之间");
+            Console.WriteLine("[CcdService] Update failed: CPU core number out of range");
+            throw new ArgumentException("CPU core number must be between 0-63");
         }
 
         var ccds = Ccds;
         ccds[ccdName] = new CcdConfig { Cores = cores };
         SaveCcds(ccds);
-        Console.WriteLine($"[CcdService] 成功更新CCD组：{ccdName}");
+        Console.WriteLine($"[CcdService] Successfully updated CCD group: {ccdName}");
     }
 
     /// <summary>
-    /// 删除 CCD 配置
+    /// Delete CCD configuration
     /// </summary>
-    /// <param name="ccdName">要删除的 CCD 名称</param>
-    /// <returns>是否删除成功</returns>
+    /// <param name="ccdName">CCD name to delete</param>
+    /// <returns>Whether deletion was successful</returns>
     public bool DeleteCcd(string ccdName)
     {
-        Console.WriteLine($"[CcdService] 尝试删除CCD组：{ccdName}");
+        Console.WriteLine($"[CcdService] Attempting to delete CCD group: {ccdName}");
         var ccds = Ccds;
         var removed = ccds.Remove(ccdName);
         if (removed)
         {
             SaveCcds(ccds);
-            Console.WriteLine($"[CcdService] 成功删除CCD组：{ccdName}");
+            Console.WriteLine($"[CcdService] Successfully deleted CCD group: {ccdName}");
         }
         else
         {
-            Console.WriteLine($"[CcdService] 删除失败：未找到CCD组 {ccdName}");
+            Console.WriteLine($"[CcdService] Delete failed: CCD group {ccdName} not found");
         }
 
         return removed;
     }
 
     /// <summary>
-    /// 保存 CCD 配置
+    /// Save CCD configuration
     /// </summary>
     private void SaveCcds(Dictionary<string, CcdConfig> ccds)
     {
         try
         {
-            Console.WriteLine("[CcdService] 开始保存CCD配置");
+            Console.WriteLine("[CcdService] Starting to save CCD configuration");
             var directory = Path.GetDirectoryName(_storePath);
             if (!string.IsNullOrEmpty(directory))
             {
@@ -125,12 +125,12 @@ public class CcdService
             var tomlString = Toml.FromModel(config);
             File.WriteAllText(_storePath, tomlString);
             Ccds = ccds;
-            Console.WriteLine($"[CcdService] 成功保存CCD配置，共 {ccds.Count} 个CCD组");
+            Console.WriteLine($"[CcdService] Successfully saved CCD configuration, total {ccds.Count} CCD groups");
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[CcdService] 保存CCD配置失败：{ex.Message}");
-            throw new Exception($"保存 CCD 配置失败: {ex.Message}", ex);
+            Console.WriteLine($"[CcdService] Failed to save CCD configuration: {ex.Message}");
+            throw new Exception($"Failed to save CCD configuration: {ex.Message}", ex);
         }
     }
 }

@@ -32,7 +32,7 @@ public partial class AddCcdViewModel : ObservableObject
     {
         if (string.IsNullOrWhiteSpace(CcdName))
         {
-            MessageBox.Show("请输入CCD组名称", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+            MessageBox.Show("Please enter a CCD group name", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             return;
         }
 
@@ -43,20 +43,20 @@ public partial class AddCcdViewModel : ObservableObject
 
         if (selectedCores.Length == 0)
         {
-            MessageBox.Show("请至少选择一个CPU核心", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+            MessageBox.Show("Please select at least one CPU core", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             return;
         }
 
         try
         {
-            Console.WriteLine($"[AddCcdViewModel] 尝试添加CCD组 {CcdName}，核心数：{selectedCores.Length}");
+            Console.WriteLine($"[AddCcdViewModel] Attempting to add CCD group {CcdName}, core count: {selectedCores.Length}");
             _ccdService.UpsertCcd(CcdName, selectedCores);
             DialogResult = true;
             _window.Close();
         }
         catch (Exception ex)
         {
-            MessageBox.Show(ex.Message, "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+            MessageBox.Show(ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
 

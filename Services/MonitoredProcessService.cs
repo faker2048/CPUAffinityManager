@@ -39,10 +39,10 @@ public class MonitoredProcessService
     {
         try
         {
-            Console.WriteLine($"[MonitoredProcessService] 开始加载监控进程配置，配置文件路径：{storePath}");
+            Console.WriteLine($"[MonitoredProcessService] Loading monitored process configuration, config file path: {storePath}");
             if (!File.Exists(storePath))
             {
-                Console.WriteLine("[MonitoredProcessService] 配置文件不存在，返回空配置");
+                Console.WriteLine("[MonitoredProcessService] Config file does not exist, returning empty configuration");
                 Directory.CreateDirectory(Path.GetDirectoryName(storePath) ?? string.Empty);
                 return new Dictionary<string, MonitoredProcess>();
             }
@@ -50,30 +50,30 @@ public class MonitoredProcessService
             var json = File.ReadAllText(storePath);
             if (string.IsNullOrEmpty(json))
             {
-                Console.WriteLine("[MonitoredProcessService] 配置文件为空，返回空配置");
+                Console.WriteLine("[MonitoredProcessService] Config file is empty, returning empty configuration");
                 return new Dictionary<string, MonitoredProcess>();
             }
 
             var monitoredProcesses = JsonConvert.DeserializeObject<List<MonitoredProcess>>(json);
-            Console.WriteLine($"[MonitoredProcessService] 成功加载监控进程配置，共 {monitoredProcesses?.Count ?? 0} 个进程");
+            Console.WriteLine($"[MonitoredProcessService] Successfully loaded monitored process configuration, total {monitoredProcesses?.Count ?? 0} processes");
             return monitoredProcesses?.ToDictionary(p => p.ProcessName, p => p)
                    ?? new Dictionary<string, MonitoredProcess>();
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[MonitoredProcessService] 加载监控进程配置失败：{ex.Message}");
-            MessageBox.Show($"加载配置文件失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+            Console.WriteLine($"[MonitoredProcessService] Failed to load monitored process configuration: {ex.Message}");
+            MessageBox.Show($"Failed to load configuration file: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             return new Dictionary<string, MonitoredProcess>();
         }
     }
 
     public void SaveMonitoredProcesses(Dictionary<string, MonitoredProcess> monitoredProcesses)
     {
-        Console.WriteLine("[MonitoredProcessService] 开始保存监控进程配置");
+        Console.WriteLine("[MonitoredProcessService] Starting to save monitored process configuration");
         if (string.IsNullOrEmpty(_storePath))
         {
-            Console.WriteLine("[MonitoredProcessService] 保存失败：配置文件路径为空");
-            throw new InvalidOperationException("配置文件路径未设置");
+            Console.WriteLine("[MonitoredProcessService] Save failed: Config file path is empty");
+            throw new InvalidOperationException("Config file path is not set");
         }
 
         var directory = Path.GetDirectoryName(_storePath);
@@ -82,42 +82,41 @@ public class MonitoredProcessService
             Directory.CreateDirectory(directory);
         }
 
-
         var config = monitoredProcesses.Values.ToList();
         var json = JsonConvert.SerializeObject(config, Formatting.Indented);
         File.WriteAllText(_storePath, json);
-        Console.WriteLine($"[MonitoredProcessService] 成功保存监控进程配置，共 {config.Count} 个进程");
+        Console.WriteLine($"[MonitoredProcessService] Successfully saved monitored process configuration, total {config.Count} processes");
     }
 
     public void AddMonitoredProcess(MonitoredProcess monitoredProcess)
     {
-        Console.WriteLine($"[MonitoredProcessService] 尝试添加监控进程：{monitoredProcess?.ProcessName}");
+        Console.WriteLine($"[MonitoredProcessService] Attempting to add monitored process: {monitoredProcess?.ProcessName}");
         if (monitoredProcess == null)
         {
-            Console.WriteLine("[MonitoredProcessService] 添加失败：进程对象为空");
+            Console.WriteLine("[MonitoredProcessService] Add failed: Process object is null");
             throw new ArgumentNullException(nameof(monitoredProcess));
         }
 
         if (string.IsNullOrEmpty(monitoredProcess.ProcessName))
         {
-            Console.WriteLine("[MonitoredProcessService] 添加失败：进程名称为空");
-            throw new ArgumentException("进程名称不能为空", nameof(monitoredProcess));
+            Console.WriteLine("[MonitoredProcessService] Add failed: Process name is empty");
+            throw new ArgumentException("Process name cannot be empty", nameof(monitoredProcess));
         }
 
         var tmp = new Dictionary<string, MonitoredProcess>(MonitoredProcesses);
         tmp[monitoredProcess.ProcessName] = monitoredProcess;
         SaveMonitoredProcesses(tmp);
         MonitoredProcesses = tmp;
-        Console.WriteLine($"[MonitoredProcessService] 成功添加监控进程：{monitoredProcess.ProcessName}");
+        Console.WriteLine($"[MonitoredProcessService] Successfully added monitored process: {monitoredProcess.ProcessName}");
     }
 
     public void RemoveMonitoredProcess(string processName)
     {
-        Console.WriteLine($"[MonitoredProcessService] 尝试删除监控进程：{processName}");
+        Console.WriteLine($"[MonitoredProcessService] Attempting to delete monitored process: {processName}");
         if (string.IsNullOrEmpty(processName))
         {
-            Console.WriteLine("[MonitoredProcessService] 删除失败：进程名称为空");
-            throw new ArgumentException("进程名称不能为空", nameof(processName));
+            Console.WriteLine("[MonitoredProcessService] Delete failed: Process name is empty");
+            throw new ArgumentException("Process name cannot be empty", nameof(processName));
         }
 
         var tmp = new Dictionary<string, MonitoredProcess>(MonitoredProcesses);
@@ -125,11 +124,11 @@ public class MonitoredProcessService
         {
             SaveMonitoredProcesses(tmp);
             MonitoredProcesses = tmp;
-            Console.WriteLine($"[MonitoredProcessService] 成功删除监控进程：{processName}");
+            Console.WriteLine($"[MonitoredProcessService] Successfully deleted monitored process: {processName}");
         }
         else
         {
-            Console.WriteLine($"[MonitoredProcessService] 删除失败：未找到进程 {processName}");
+            Console.WriteLine($"[MonitoredProcessService] Delete failed: Process {processName} not found");
         }
     }
 

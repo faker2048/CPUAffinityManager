@@ -5,11 +5,11 @@ namespace @_.Services;
 public class ProcessAffinityService
 {
     /// <summary>
-    /// 获取所有运行中的进程, 返回 (ProcessId, ProcessName) 元组
+    /// Get all running processes, returns (ProcessId, ProcessName) tuples
     /// </summary>
     private IEnumerable<(int ProcessId, string ProcessName)> GetRunningProcesses()
     {
-        Console.WriteLine("[ProcessAffinityService] 获取运行中的进程列表");
+        Console.WriteLine("[ProcessAffinityService] Getting list of running processes");
         return Process.GetProcesses()
             .Where(p => !string.IsNullOrEmpty(p.ProcessName))
             .Select(p => (p.Id, p.ProcessName))
@@ -17,21 +17,21 @@ public class ProcessAffinityService
     }
 
     /// <summary>
-    /// 通过进程名称设置CPU亲和性, 如果 processName 有多个进程, 则对每个进程设置亲和性
+    /// Set CPU affinity by process name, if there are multiple processes with the same name, set affinity for each process
     /// </summary>
-    /// <param name="processName">进程名称（不含.exe）</param>
-    /// <param name="affinityMask">CPU亲和性掩码</param>
-    /// <returns>操作结果，包含成功和失败信息</returns>
+    /// <param name="processName">Process name (without .exe)</param>
+    /// <param name="affinityMask">CPU affinity mask</param>
+    /// <returns>Operation result, including success and failure information</returns>
     public static (bool Success, string Message) SetAffinityByName(string processName, long affinityMask)
     {
-        Console.WriteLine($"[ProcessAffinityService] 尝试设置进程亲和性，进程名：{processName}，掩码：{affinityMask:X}");
+        Console.WriteLine($"[ProcessAffinityService] Attempting to set process affinity, process name: {processName}, mask: {affinityMask:X}");
         try
         {
             var processes = Process.GetProcessesByName(processName);
             if (!processes.Any())
             {
-                Console.WriteLine($"[ProcessAffinityService] 设置失败：未找到进程 {processName}");
-                return (false, $"未找到进程：{processName}");
+                Console.WriteLine($"[ProcessAffinityService] Setting failed: Process not found {processName}");
+                return (false, $"Process not found: {processName}");
             }
 
             var results = new List<(bool Success, string Message)>();
@@ -43,31 +43,31 @@ public class ProcessAffinityService
             var successCount = results.Count(r => r.Success);
             if (successCount == processes.Length)
             {
-                Console.WriteLine($"[ProcessAffinityService] 成功设置 {successCount} 个进程的CPU亲和性");
-                return (true, $"成功设置 {successCount} 个进程的CPU亲和性");
+                Console.WriteLine($"[ProcessAffinityService] Successfully set CPU affinity for {successCount} processes");
+                return (true, $"Successfully set CPU affinity for {successCount} processes");
             }
 
             var errors = results.Where(r => !r.Success).Select(r => r.Message);
-            Console.WriteLine($"[ProcessAffinityService] 部分进程设置失败，成功：{successCount}，失败：{processes.Length - successCount}");
-            return (false, $"部分进程设置失败。成功：{successCount}，失败：{processes.Length - successCount}\n" +
+            Console.WriteLine($"[ProcessAffinityService] Some processes failed to set, success: {successCount}, failed: {processes.Length - successCount}");
+            return (false, $"Some processes failed to set. Success: {successCount}, Failed: {processes.Length - successCount}\n" +
                            string.Join("\n", errors));
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[ProcessAffinityService] 设置CPU亲和性时发生错误：{ex.Message}");
-            return (false, $"设置CPU亲和性时发生错误：{ex.Message}");
+            Console.WriteLine($"[ProcessAffinityService] Error occurred while setting CPU affinity: {ex.Message}");
+            return (false, $"Error occurred while setting CPU affinity: {ex.Message}");
         }
     }
 
     /// <summary>
-    /// 通过进程ID设置CPU亲和性
+    /// Set CPU affinity by process ID
     /// </summary>
-    /// <param name="processId">进程ID</param>
-    /// <param name="affinityMask">CPU亲和性掩码</param>
-    /// <returns>操作结果，包含成功和失败信息</returns>
+    /// <param name="processId">Process ID</param>
+    /// <param name="affinityMask">CPU affinity mask</param>
+    /// <returns>Operation result, including success and failure information</returns>
     public static (bool Success, string Message) SetAffinityById(int processId, long affinityMask)
     {
-        Console.WriteLine($"[ProcessAffinityService] 尝试设置进程亲和性，进程ID：{processId}，掩码：{affinityMask:X}");
+        Console.WriteLine($"[ProcessAffinityService] Attempting to set process affinity, process ID: {processId}, mask: {affinityMask:X}");
         try
         {
             var process = Process.GetProcessById(processId);
@@ -75,21 +75,21 @@ public class ProcessAffinityService
         }
         catch (ArgumentException)
         {
-            Console.WriteLine($"[ProcessAffinityService] 设置失败：未找到进程ID {processId}");
-            return (false, $"未找到进程ID：{processId}");
+            Console.WriteLine($"[ProcessAffinityService] Setting failed: Process ID {processId} not found");
+            return (false, $"Process ID not found: {processId}");
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[ProcessAffinityService] 设置CPU亲和性时发生错误：{ex.Message}");
-            return (false, $"设置CPU亲和性时发生错误：{ex.Message}");
+            Console.WriteLine($"[ProcessAffinityService] Error occurred while setting CPU affinity: {ex.Message}");
+            return (false, $"Error occurred while setting CPU affinity: {ex.Message}");
         }
     }
 
     /// <summary>
-    /// 获取指定进程的CPU亲和性掩码
+    /// Get CPU affinity mask for the specified process
     /// </summary>
-    /// <param name="processId">进程ID</param>
-    /// <returns>CPU亲和性掩码和进程信息</returns>
+    /// <param name="processId">Process ID</param>
+    /// <returns>CPU affinity mask and process information</returns>
     public static (bool Success, long AffinityMask, string ProcessName, string Message) GetAffinity(int processId)
     {
         Console.WriteLine($"[ProcessAffinityService] 尝试获取进程亲和性，进程ID：{processId}");
@@ -122,7 +122,7 @@ public class ProcessAffinityService
         var (success, affinityMask, processName, message) = GetAffinity(processId);
         if (!success)
         {
-            return "获取失败";
+            return "Failed to get";
         }
         return FormatAffinityMaskToHumanReadable(affinityMask);
     }
@@ -134,7 +134,7 @@ public class ProcessAffinityService
             var processes = Process.GetProcessesByName(processName);
             if (!processes.Any())
             {
-                return "进程未运行";
+                return "Process not running";
             }
 
             var affinityMasks = processes.Select(p => p.ProcessorAffinity.ToInt64()).Distinct().ToList();
@@ -144,13 +144,13 @@ public class ProcessAffinityService
             }
             else
             {
-                return $"多个进程({processes.Length}个)亲和性不一致";
+                return $"Multiple processes ({processes.Length}) with inconsistent affinity";
             }
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[ProcessAffinityService] 获取进程亲和性时发生错误：{ex.Message}");
-            return "获取失败";
+            Console.WriteLine($"[ProcessAffinityService] Error occurred while getting process affinity: {ex.Message}");
+            return "Failed to get";
         }
     }
 
@@ -234,10 +234,9 @@ public class ProcessAffinityService
             }
         }
 
-
         if (cores.Count == 0)
         {
-            return "无核心绑定";
+            return "No cores bound";
         }
 
         var ranges = new List<string>();

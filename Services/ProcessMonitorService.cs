@@ -6,7 +6,7 @@ using System.ComponentModel;
 
 namespace @_.Services;
 
-// 合并所有进程相关的信息到一个记录结构体
+// Combine all process-related information into a record struct
 public readonly record struct ProcessInfo(int ProcessId, string ProcessName, long AffinityMask = 0)
 {
     public override string ToString() => $"{ProcessName}({ProcessId})";
@@ -33,7 +33,7 @@ public class ProcessMonitorService : IDisposable
     {
         var newProcesses = GetCurrentProcesses();
         
-        // 检查新启动的进程
+        // Check for newly started processes
         foreach (var (processKey, processInfo) in newProcesses)
         {
             var key = (processInfo.ProcessId, processInfo.ProcessName);
@@ -43,7 +43,7 @@ public class ProcessMonitorService : IDisposable
             }
         }
 
-        // 检查已结束的进程
+        // Check for ended processes
         foreach (var (processKey, processInfo) in _currentProcesses)
         {
             var key = (processInfo.ProcessId, processInfo.ProcessName);
@@ -53,7 +53,7 @@ public class ProcessMonitorService : IDisposable
             }
         }
 
-        // 检查亲和性变化
+        // Check for affinity changes
         foreach (var (processKey, newProcess) in newProcesses)
         {
             var key = (newProcess.ProcessId, newProcess.ProcessName);
@@ -79,29 +79,29 @@ public class ProcessMonitorService : IDisposable
                         return new ProcessInfo(p.Id, p.ProcessName, (long)p.ProcessorAffinity);
                     }
                     catch (Exception ex) when (
-                        ex is Win32Exception ||  // 访问被拒绝
-                        ex is InvalidOperationException)  // 进程已退出
+                        ex is Win32Exception ||  // Access denied
+                        ex is InvalidOperationException)  // Process has exited
                     {
-                        // 如果无法获取ProcessorAffinity，仍然返回基本进程信息
+                        // If we can't get ProcessorAffinity, still return basic process info
                         return new ProcessInfo(p.Id, p.ProcessName);
                     }
                 })
-                .Where(p => !string.IsNullOrEmpty(p.ProcessName)) // 过滤掉无效的进程
+                .Where(p => !string.IsNullOrEmpty(p.ProcessName)) // Filter out invalid processes
                 .ToDictionary(
                     info => (Id: info.ProcessId, Name: info.ProcessName),
                     info => info,
-                    // 如果有重复的键（极少情况），保留第一个
+                    // If there are duplicate keys (rare case), keep the first one
                     new DuplicateKeyComparer<(int Id, string Name)>()
                 );
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[ProcessMonitorService] 获取进程列表失败：{ex.Message}");
+            Console.WriteLine($"[ProcessMonitorService] Failed to get process list: {ex.Message}");
             return new Dictionary<(int Id, string Name), ProcessInfo>();
         }
     }
 
-    // 处理重复键的比较器
+    // Comparer for handling duplicate keys
     private class DuplicateKeyComparer<TKey> : IEqualityComparer<TKey>
     {
         public bool Equals(TKey? x, TKey? y) => x?.Equals(y) ?? y == null;

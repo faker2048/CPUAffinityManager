@@ -60,19 +60,19 @@ public partial class MainViewModel : ObservableObject, IDisposable
 
         _monitoredProcessService.MonitoredProcessStarted += (processInfo) =>
         {
-            Console.WriteLine($"[MainViewModel] 进程启动：{processInfo.ProcessName}");
+            Console.WriteLine($"[MainViewModel] Process started: {processInfo.ProcessName}");
             UpdateMonitoredProcesses();
         };
 
         _monitoredProcessService.MonitoredProcessEnded += (processInfo) => 
         {
-            Console.WriteLine($"[MainViewModel] 进程结束：{processInfo.ProcessName}");
+            Console.WriteLine($"[MainViewModel] Process ended: {processInfo.ProcessName}");
             UpdateMonitoredProcesses();
         };
 
         _monitoredProcessService.MonitoredProcessAffinityChanged += (processInfo) =>
         {
-            Console.WriteLine($"[MainViewModel] 进程CPU亲和性变化：{processInfo.ProcessName}");
+            Console.WriteLine($"[MainViewModel] Process CPU affinity changed: {processInfo.ProcessName}");
             UpdateMonitoredProcesses();
         };
 
@@ -93,7 +93,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
                 string affinityString;
                 if (ccdConfig == null)
                 {
-                    affinityString = "未设置";
+                    affinityString = "Not set";
                 }
                 else
                 {
@@ -116,10 +116,10 @@ public partial class MainViewModel : ObservableObject, IDisposable
         var dialog = new AddProcessWindow(vm);
 
         var result = dialog.ShowDialog();
-        Console.WriteLine($"[MainViewModel] 对话框结果：{result}, SelectedProcess: {vm.SelectedProcess?.ProcessName}, SelectedCcd: {vm.SelectedCcd}");
+        Console.WriteLine($"[MainViewModel] Dialog result: {result}, SelectedProcess: {vm.SelectedProcess?.ProcessName}, SelectedCcd: {vm.SelectedCcd}");
         if (result == true && vm.SelectedProcess != null && vm.SelectedCcd != null)
         {
-            Console.WriteLine($"[MainViewModel] 开始添加进程：{vm.SelectedProcess.ProcessName}，CCD组：{vm.SelectedCcd.Value.Key}");
+            Console.WriteLine($"[MainViewModel] Starting to add process: {vm.SelectedProcess.ProcessName}, CCD group: {vm.SelectedCcd.Value.Key}");
             var process = new MonitoredProcess
             {
                 ProcessName = vm.SelectedProcess.ProcessName,
@@ -130,7 +130,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         }
         else
         {
-            Console.WriteLine("[MainViewModel] 添加进程取消或数据无效");
+            Console.WriteLine("[MainViewModel] Process addition cancelled or data invalid");
         }
     }
 
@@ -138,8 +138,8 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private void RemoveProcess(string processName)
     {
         if (MessageBox.Show(
-            $"确定要删除进程 {processName} 吗？",
-            "确认删除",
+            $"Are you sure you want to delete process {processName}?",
+            "Confirm Deletion",
             MessageBoxButton.YesNo,
             MessageBoxImage.Question) == MessageBoxResult.Yes)
         {
@@ -158,7 +158,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
 
             if (!_ccdService.Ccds.TryGetValue(ccdName, out var ccd))
             {
-                Console.WriteLine($"[MainViewModel] CCD组 {ccdName} 不存在");
+                Console.WriteLine($"[MainViewModel] CCD group {ccdName} does not exist");
                 continue;
             }
 
@@ -166,7 +166,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
             var result = ProcessAffinityService.SetAffinityByName(processName, affinityMask);
             if (!result.Success)
             {
-                Console.WriteLine($"[MainViewModel] 设置CPU亲和性失败：{result.Message}");
+                Console.WriteLine($"[MainViewModel] Failed to set CPU affinity: {result.Message}");
             }
         }
     }

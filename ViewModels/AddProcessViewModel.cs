@@ -72,13 +72,13 @@ public partial class AddProcessViewModel : ObservableObject
     {
         if (SelectedProcess == null)
         {
-            MessageBox.Show("请选择一个进程", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+            MessageBox.Show("Please select a process", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             return;
         }
 
         if (SelectedCcd == null || string.IsNullOrEmpty(SelectedCcd.Value.Key))
         {
-            MessageBox.Show("请选择一个CCD组", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+            MessageBox.Show("Please select a CCD group", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             return;
         }
 
@@ -107,10 +107,10 @@ public partial class AddProcessViewModel : ObservableObject
         dialog.DataContext = vm;
         var result = dialog.ShowDialog();
         
-        // 更新 AvailableCcds
+        // Update AvailableCcds
         AvailableCcds = _ccdService.Ccds;
         
-        // 如果没有选中的 CCD 组，且有可用的 CCD 组，则选中第一个
+        // If no CCD group is selected and there are available CCD groups, select the first one
         if (SelectedCcd == null && _ccdService.Ccds.Any())
         {
             SelectedCcd = _ccdService.Ccds.First();
@@ -130,7 +130,7 @@ public partial class AddProcessViewModel : ObservableObject
 
             if (!File.Exists(configPath))
             {
-                MessageBox.Show("配置文件不存在", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show("Configuration file does not exist", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
 
@@ -142,11 +142,11 @@ public partial class AddProcessViewModel : ObservableObject
             var result = editorWindow.ShowDialog();
             if (result == true)
             {
-                // 配置已保存，刷新 CCD 列表
+                // Configuration saved, refresh CCD list
                 _ccdService.ReloadCcds();
                 AvailableCcds = _ccdService.Ccds;
                 
-                // 如果没有选中的 CCD 组，且有可用的 CCD 组，则选中第一个
+                // If no CCD group is selected and there are available CCD groups, select the first one
                 if (SelectedCcd == null && _ccdService.Ccds.Any())
                 {
                     SelectedCcd = _ccdService.Ccds.First();
@@ -155,7 +155,7 @@ public partial class AddProcessViewModel : ObservableObject
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"打开配置文件失败：{ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+            MessageBox.Show($"Failed to open configuration file: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
 

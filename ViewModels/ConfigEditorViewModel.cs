@@ -28,7 +28,7 @@ public partial class ConfigEditorViewModel : ObservableObject
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"读取配置文件失败：{ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+            MessageBox.Show($"Failed to read configuration file: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             _window.Close();
         }
     }
@@ -44,7 +44,7 @@ public partial class ConfigEditorViewModel : ObservableObject
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"保存配置文件失败：{ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+            MessageBox.Show($"Failed to save configuration file: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
 
