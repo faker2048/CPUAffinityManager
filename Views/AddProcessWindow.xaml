@@ -11,32 +11,46 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <TextBox x:Name="SearchBox" 
-                 Grid.Row="0"
-                 Height="35"
-                 Margin="0,0,0,10"
-                 Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}">
-            <TextBox.Style>
-                <Style TargetType="TextBox">
-                    <Setter Property="VerticalContentAlignment" Value="Center"/>
-                    <Style.Triggers>
-                        <Trigger Property="Text" Value="">
-                            <Setter Property="Background">
-                                <Setter.Value>
-                                    <VisualBrush Stretch="None" AlignmentX="Left">
-                                        <VisualBrush.Visual>
-                                            <TextBlock Text="Search processes..." 
-                                                     Foreground="Gray"
-                                                     VerticalAlignment="Center"/>
-                                        </VisualBrush.Visual>
-                                    </VisualBrush>
-                                </Setter.Value>
-                            </Setter>
-                        </Trigger>
-                    </Style.Triggers>
-                </Style>
-            </TextBox.Style>
-        </TextBox>
+        <Grid Grid.Row="0" Margin="0,0,0,10">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            
+            <TextBox x:Name="SearchBox" 
+                     Grid.Column="0"
+                     Height="35"
+                     Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}">
+                <TextBox.Style>
+                    <Style TargetType="TextBox">
+                        <Setter Property="VerticalContentAlignment" Value="Center"/>
+                        <Style.Triggers>
+                            <Trigger Property="Text" Value="">
+                                <Setter Property="Background">
+                                    <Setter.Value>
+                                        <VisualBrush Stretch="None" AlignmentX="Left">
+                                            <VisualBrush.Visual>
+                                                <TextBlock Text="Search processes..." 
+                                                         Foreground="Gray"
+                                                         VerticalAlignment="Center"/>
+                                            </VisualBrush.Visual>
+                                        </VisualBrush>
+                                    </Setter.Value>
+                                </Setter>
+                            </Trigger>
+                        </Style.Triggers>
+                    </Style>
+                </TextBox.Style>
+            </TextBox>
+
+            <Button Grid.Column="1"
+                    Height="35"
+                    Margin="10,0,0,0"
+                    Padding="10,0"
+                    Command="{Binding SelectFromFileCommand}">
+                <TextBlock Text="Select from file"/>
+            </Button>
+        </Grid>
 
         <Grid Grid.Row="1" Margin="0,0,0,10">
             <Grid.ColumnDefinitions>

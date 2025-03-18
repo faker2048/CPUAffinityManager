@@ -5,6 +5,7 @@ using System.Windows;
 using _.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Microsoft.Win32;
 
 namespace @_.ViewModels;
 
@@ -156,6 +157,38 @@ public partial class AddProcessViewModel : ObservableObject
         catch (Exception ex)
         {
             MessageBox.Show($"Failed to open configuration file: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    [RelayCommand]
+    private void SelectFromFile()
+    {
+        var openFileDialog = new OpenFileDialog
+        {
+            Filter = "Executable Files (*.exe)|*.exe|All Files (*.*)|*.*",
+            Title = "Select Process File"
+        };
+
+        if (openFileDialog.ShowDialog() == true)
+        {
+            try
+            {
+                var fileInfo = new FileInfo(openFileDialog.FileName);
+                var processName = Path.GetFileNameWithoutExtension(fileInfo.Name);
+                
+                var processInfo = new ProcessInfo(processName);
+                SelectedProcess = processInfo;
+                
+                // Ensure the selected process is shown in the list
+                if (!FilteredProcesses.Contains(processInfo))
+                {
+                    FilteredProcesses.Insert(0, processInfo);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to read selected file: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
     }
 
