@@ -2,7 +2,6 @@
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <OutputType>Exe</OutputType>
     <TargetFramework>net9.0-windows</TargetFramework>
     <RootNamespace>_</RootNamespace>
     <Nullable>enable</Nullable>
