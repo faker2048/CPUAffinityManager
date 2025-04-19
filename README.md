@@ -1,6 +1,7 @@
 # CPU Affinity Manager
 
-![Interface Screenshot](界面1.png)
+![image](https://github.com/user-attachments/assets/b623b2a2-34c3-4262-9be2-867f80059a93)
+
 
 A Windows utility designed specifically for controlling game and application scheduling on AMD multi-CCD processors such as 7950X3D and 9950X3D. This tool gives you direct control over which CCD (Core Compute Die) your games run on, helping optimize performance and reduce latency.
 
