@@ -139,31 +139,46 @@ public class MonitoredProcessService
 
     private void OnProcessStarted(ProcessInfo processInfo)
     {
-        if (!IsProcessMonitored(processInfo.ProcessName))
+        if (IsProcessMonitored(processInfo.ProcessName))
         {
-            return;
-        }
-
-        if (IsAutoApplyRules)
-        {
-            var monitoredProcess = MonitoredProcesses[processInfo.ProcessName];
-
-            var ccdConfig = _ccdService.Ccds.GetValueOrDefault(monitoredProcess.CcdName);
-            if (ccdConfig == null)
+            if (IsAutoApplyRules)
             {
-                Console.WriteLine($"[MonitoredProcessService] 未找到CCD配置：{monitoredProcess.CcdName}");
-                return;
+                var monitoredProcess = MonitoredProcesses[processInfo.ProcessName];
+
+                var ccdConfig = _ccdService.Ccds.GetValueOrDefault(monitoredProcess.CcdName);
+                if (ccdConfig == null)
+                {
+                    Console.WriteLine($"[MonitoredProcessService] CCD configuration not found: {monitoredProcess.CcdName}");
+                    return;
+                }
+
+                var affinityMask = ProcessAffinityService.CreateAffinityMask(ccdConfig.Cores.ToArray());
+                var result = ProcessAffinityService.SetAffinityById(processInfo.ProcessId, affinityMask);
+                if (!result.Success)
+                {
+                    Console.WriteLine($"[MonitoredProcessService] Failed to set CPU affinity: {result.Message}");
+                }
             }
 
-            var affinityMask = ProcessAffinityService.CreateAffinityMask(ccdConfig.Cores.ToArray());
-            var result = ProcessAffinityService.SetAffinityById(processInfo.ProcessId, affinityMask);
-            if (!result.Success)
+            MonitoredProcessStarted?.Invoke(processInfo);
+        }
+        else if (IsAutoApplyRules && !string.IsNullOrEmpty(_ccdService.DefaultCcd))
+        {
+            var defaultCcdConfig = _ccdService.Ccds.GetValueOrDefault(_ccdService.DefaultCcd);
+            if (defaultCcdConfig != null)
             {
-                Console.WriteLine($"[MonitoredProcessService] 设置CPU亲和性失败：{result.Message}");
+                var affinityMask = ProcessAffinityService.CreateAffinityMask(defaultCcdConfig.Cores.ToArray());
+                var result = ProcessAffinityService.SetAffinityById(processInfo.ProcessId, affinityMask);
+                if (!result.Success)
+                {
+                    Console.WriteLine($"[MonitoredProcessService] Failed to set default CCD: {result.Message}");
+                }
+                else
+                {
+                    Console.WriteLine($"[MonitoredProcessService] Applied default CCD {_ccdService.DefaultCcd} to process {processInfo.ProcessName}");
+                }
             }
         }
-
-        MonitoredProcessStarted?.Invoke(processInfo);
     }
 
 

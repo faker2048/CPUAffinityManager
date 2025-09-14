@@ -21,6 +21,7 @@ public partial class App : Application
         services.AddSingleton<MainWindow>();
         services.AddSingleton<CcdService>();
         services.AddTransient<ViewModels.AddProcessViewModel>();
+        services.AddTransient<ViewModels.DefaultCcdViewModel>();
         services.AddSingleton<ProcessMonitorService>();
 
         var serviceProvider = services.BuildServiceProvider();
