@@ -20,8 +20,13 @@
                     <TextBlock Text="Add Rule"/>
                 </Button>
                 <Button Command="{Binding ApplyCcdRulesCommand}"
-                        Padding="8,3">
+                        Padding="8,3"
+                        Margin="0,0,10,0">
                     <TextBlock Text="Apply Rules"/>
+                </Button>
+                <Button Command="{Binding RestoreAllAffinityCommand}"
+                        Padding="8,3">
+                    <TextBlock Text="Restore All"/>
                 </Button>
                 <CheckBox Content="Auto Apply Rules"
                           VerticalAlignment="Center"
@@ -36,7 +41,7 @@
                                 Width="200">
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate>
-                                    <TextBlock Text="{Binding ProcessName}"/>
+                                    <TextBlock Text="{Binding DisplayName}"/>
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
@@ -59,10 +64,20 @@
                         <GridViewColumn Width="100">
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate>
-                                    <Button Content="Remove"
-                                            Command="{Binding DataContext.RemoveProcessCommand, 
+                                    <Button Command="{Binding DataContext.RemoveProcessCommand, 
                                                         RelativeSource={RelativeSource AncestorType=ListView}}"
-                                            CommandParameter="{Binding ProcessName}"/>
+                                            CommandParameter="{Binding ProcessName}">
+                                        <Button.Style>
+                                            <Style TargetType="Button">
+                                                <Setter Property="Content" Value="Remove"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsDefaultProcess}" Value="True">
+                                                        <Setter Property="Content" Value="Edit"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Button.Style>
+                                    </Button>
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>

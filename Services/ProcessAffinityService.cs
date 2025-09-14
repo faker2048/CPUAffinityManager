@@ -223,7 +223,91 @@ public class ProcessAffinityService
         return Environment.ProcessorCount;
     }
 
-    private static string FormatAffinityMaskToHumanReadable(long affinityMask)
+    /// <summary>
+    /// Restore all processes to full CPU affinity
+    /// </summary>
+    /// <returns>Operation result with success/failure counts</returns>
+    public static (bool Success, string Message, int SuccessCount, int FailCount) RestoreAllProcessesAffinity()
+    {
+        Console.WriteLine("[ProcessAffinityService] Starting to restore all processes to full CPU affinity");
+        
+        var processorCount = GetProcessorCount();
+        var allCoresMask = CreateAffinityMask(Enumerable.Range(0, processorCount).ToArray());
+        
+        var processes = Process.GetProcesses();
+        var successCount = 0;
+        var failCount = 0;
+
+        foreach (var process in processes)
+        {
+            try
+            {
+                var result = SetAffinityById(process.Id, allCoresMask);
+                if (result.Success)
+                    successCount++;
+                else
+                    failCount++;
+            }
+            catch
+            {
+                failCount++;
+            }
+        }
+
+        var success = successCount > 0;
+        var message = $"Restore completed. Success: {successCount}, Failed: {failCount}";
+        Console.WriteLine($"[ProcessAffinityService] {message}");
+        
+        return (success, message, successCount, failCount);
+    }
+
+    /// <summary>
+    /// Apply default CCD to processes not in the monitored list
+    /// </summary>
+    /// <param name="defaultCcdCores">Default CCD core configuration</param>
+    /// <param name="excludeProcessNames">Process names to exclude from default CCD application</param>
+    /// <returns>Operation result with success/failure counts</returns>
+    public static (bool Success, string Message, int ProcessedCount) ApplyDefaultCcdToOtherProcesses(
+        int[] defaultCcdCores, 
+        HashSet<string> excludeProcessNames)
+    {
+        Console.WriteLine("[ProcessAffinityService] Applying default CCD to other processes");
+        
+        if (defaultCcdCores == null || defaultCcdCores.Length == 0)
+        {
+            return (false, "Default CCD cores not specified", 0);
+        }
+
+        var processes = Process.GetProcesses()
+            .Where(p => !string.IsNullOrEmpty(p.ProcessName) && !excludeProcessNames.Contains(p.ProcessName))
+            .ToList();
+
+        var affinityMask = CreateAffinityMask(defaultCcdCores);
+        var processedCount = 0;
+        
+        foreach (var process in processes)
+        {
+            try
+            {
+                var result = SetAffinityById(process.Id, affinityMask);
+                if (result.Success)
+                {
+                    processedCount++;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[ProcessAffinityService] Failed to set default CCD for process {process.ProcessName}: {ex.Message}");
+            }
+        }
+
+        var message = $"Applied default CCD to {processedCount} processes";
+        Console.WriteLine($"[ProcessAffinityService] {message}");
+        
+        return (true, message, processedCount);
+    }
+
+    public static string FormatAffinityMaskToHumanReadable(long affinityMask)
     {
         var cores = new List<int>();
         for (int i = 0; i < 64; i++)
@@ -251,6 +335,37 @@ public class ProcessAffinityService
                 start = cores[i];
             }
             prev = cores[i];
+        }
+
+        ranges.Add(start == prev ? $"{start}" : $"{start}-{prev}");
+        return string.Join(", ", ranges);
+    }
+
+    /// <summary>
+    /// Format core array to human readable string
+    /// </summary>
+    /// <param name="cores">Array of core numbers</param>
+    /// <returns>Human readable core range string</returns>
+    public static string FormatCoreArrayToHumanReadable(int[] cores)
+    {
+        if (cores == null || cores.Length == 0)
+        {
+            return "No cores";
+        }
+
+        var sortedCores = cores.OrderBy(c => c).ToList();
+        var ranges = new List<string>();
+        int start = sortedCores[0];
+        int prev = sortedCores[0];
+
+        for (int i = 1; i < sortedCores.Count; i++)
+        {
+            if (sortedCores[i] != prev + 1)
+            {
+                ranges.Add(start == prev ? $"{start}" : $"{start}-{prev}");
+                start = sortedCores[i];
+            }
+            prev = sortedCores[i];
         }
 
         ranges.Add(start == prev ? $"{start}" : $"{start}-{prev}");

@@ -19,6 +19,10 @@ public partial class MonitoredProcessListItem : ObservableObject
     [ObservableProperty]
     private string _processAffinityHumanReadable = string.Empty;
 
+    [ObservableProperty]
+    private bool _isDefaultProcess = false;
+
+    public string DisplayName => IsDefaultProcess ? "Default (Other Processes)" : ProcessName;
 }
 
 public partial class MainViewModel : ObservableObject, IDisposable
@@ -86,27 +90,50 @@ public partial class MainViewModel : ObservableObject, IDisposable
 
     private void DoUpdateMonitoredProcesses()
     {
-        MonitoredProcessListItems = new ObservableCollection<MonitoredProcessListItem>(
-            _monitoredProcessService.MonitoredProcesses.Values.Select(p =>
-            {
-                var ccdConfig = _ccdService.Ccds.GetValueOrDefault(p.CcdName);
-                string affinityString;
-                if (ccdConfig == null)
-                {
-                    affinityString = "Not set";
-                }
-                else
-                {
-                    affinityString = ProcessAffinityService.GetProcessAffinityHumanReadableByName(p.ProcessName);
-                }
+        var items = new List<MonitoredProcessListItem>();
 
-                return new MonitoredProcessListItem
-                {
-                    ProcessName = p.ProcessName,
-                    CcdName = p.CcdName,
-                    ProcessAffinityHumanReadable = affinityString
-                };
-            }));
+        // Add regular monitored processes
+        items.AddRange(_monitoredProcessService.MonitoredProcesses.Values.Select(p =>
+        {
+            var ccdConfig = _ccdService.Ccds.GetValueOrDefault(p.CcdName);
+            string affinityString;
+            if (ccdConfig == null)
+            {
+                affinityString = "Not set";
+            }
+            else
+            {
+                affinityString = ProcessAffinityService.GetProcessAffinityHumanReadableByName(p.ProcessName);
+            }
+
+            return new MonitoredProcessListItem
+            {
+                ProcessName = p.ProcessName,
+                CcdName = p.CcdName,
+                ProcessAffinityHumanReadable = affinityString,
+                IsDefaultProcess = false
+            };
+        }));
+
+        // Add default process item
+        var defaultCcd = _ccdService.DefaultCcd ?? "Not set";
+        var defaultAffinityString = "Not set";
+        
+        if (!string.IsNullOrEmpty(_ccdService.DefaultCcd) && 
+            _ccdService.Ccds.TryGetValue(_ccdService.DefaultCcd, out var defaultCcdConfig))
+        {
+            defaultAffinityString = ProcessAffinityService.FormatCoreArrayToHumanReadable(defaultCcdConfig.Cores);
+        }
+
+        items.Add(new MonitoredProcessListItem
+        {
+            ProcessName = "Default",
+            CcdName = defaultCcd,
+            ProcessAffinityHumanReadable = defaultAffinityString,
+            IsDefaultProcess = true
+        });
+
+        MonitoredProcessListItems = new ObservableCollection<MonitoredProcessListItem>(items);
     }
 
     [RelayCommand]
@@ -137,6 +164,13 @@ public partial class MainViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private void RemoveProcess(string processName)
     {
+        // Handle default process item differently
+        if (processName == "Default")
+        {
+            EditDefaultCcd();
+            return;
+        }
+
         if (MessageBox.Show(
             $"Are you sure you want to delete process {processName}?",
             "Confirm Deletion",
@@ -144,6 +178,19 @@ public partial class MainViewModel : ObservableObject, IDisposable
             MessageBoxImage.Question) == MessageBoxResult.Yes)
         {
             _monitoredProcessService.RemoveMonitoredProcess(processName);
+            UpdateMonitoredProcesses();
+        }
+    }
+
+    private void EditDefaultCcd()
+    {
+        var vm = _serviceProvider.GetRequiredService<DefaultCcdViewModel>();
+        var dialog = new DefaultCcdWindow(vm);
+        
+        if (dialog.ShowDialog() == true && vm.SelectedCcd != null)
+        {
+            var selectedCcd = vm.SelectedCcd == "Not set" ? null : vm.SelectedCcd;
+            _ccdService.SetDefaultCcd(selectedCcd);
             UpdateMonitoredProcesses();
         }
     }
@@ -169,6 +216,43 @@ public partial class MainViewModel : ObservableObject, IDisposable
                 Console.WriteLine($"[MainViewModel] Failed to set CPU affinity: {result.Message}");
             }
         }
+
+        ApplyDefaultCcdToOtherProcesses();
+    }
+
+    [RelayCommand]
+    private void RestoreAllAffinity()
+    {
+        if (MessageBox.Show(
+            "Are you sure you want to restore all processes to full CPU affinity (0-31)?",
+            "Confirm Restore",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Question) != MessageBoxResult.Yes)
+        {
+            return;
+        }
+
+        var result = ProcessAffinityService.RestoreAllProcessesAffinity();
+        MessageBox.Show(result.Message, "Restore Result", 
+                       MessageBoxButton.OK, MessageBoxImage.Information);
+        UpdateMonitoredProcesses();
+    }
+
+
+    private void ApplyDefaultCcdToOtherProcesses()
+    {
+        if (string.IsNullOrEmpty(_ccdService.DefaultCcd) || 
+            !_ccdService.Ccds.TryGetValue(_ccdService.DefaultCcd, out var defaultCcd))
+        {
+            return;
+        }
+
+        var monitoredProcessNames = MonitoredProcessListItems
+            .Where(item => !item.IsDefaultProcess)
+            .Select(item => item.ProcessName)
+            .ToHashSet();
+
+        ProcessAffinityService.ApplyDefaultCcdToOtherProcesses(defaultCcd.Cores, monitoredProcessNames);
     }
 
     public void Dispose()

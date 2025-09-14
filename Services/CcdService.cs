@@ -7,29 +7,30 @@ public class CcdService
 {
     private readonly string _storePath;
 
-    public Dictionary<string, CcdConfig> Ccds { get; private set; }
+    public Dictionary<string, CcdConfig> Ccds { get; private set; } = new();
+    public string? DefaultCcd { get; private set; }
 
 
     public CcdService()
     {
-        Console.WriteLine($"[CcdService] Initializing, config file path: {_storePath}");
         _storePath = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
             "CPUAffinityManager",
             "config.toml"
         );
-        Ccds = LoadCcds();
+        Console.WriteLine($"[CcdService] Initializing, config file path: {_storePath}");
+        LoadConfig();
     }
 
     public void ReloadCcds()
     {
-        Ccds = LoadCcds();
+        LoadConfig();
     }
 
     /// <summary>
-    /// Get all CCD configurations
+    /// Load CCD configurations and default settings
     /// </summary>
-    private Dictionary<string, CcdConfig> LoadCcds()
+    private void LoadConfig()
     {
         try
         {
@@ -37,13 +38,16 @@ public class CcdService
             if (!File.Exists(_storePath))
             {
                 Console.WriteLine("[CcdService] Config file does not exist, returning empty configuration");
-                return new Dictionary<string, CcdConfig>();
+                Ccds = new Dictionary<string, CcdConfig>();
+                DefaultCcd = null;
+                return;
             }
 
             var tomlString = File.ReadAllText(_storePath);
             var model = Toml.ToModel<TomlConfig>(tomlString);
             Console.WriteLine($"[CcdService] Successfully loaded CCD configuration, total {model?.Ccds?.Count ?? 0} CCD groups");
-            return model?.Ccds ?? new Dictionary<string, CcdConfig>();
+            Ccds = model?.Ccds ?? new Dictionary<string, CcdConfig>();
+            DefaultCcd = model?.DefaultCcd;
         }
         catch (Exception ex)
         {
@@ -80,7 +84,7 @@ public class CcdService
 
         var ccds = Ccds;
         ccds[ccdName] = new CcdConfig { Cores = cores };
-        SaveCcds(ccds);
+        SaveConfig(ccds, DefaultCcd);
         Console.WriteLine($"[CcdService] Successfully updated CCD group: {ccdName}");
     }
 
@@ -96,7 +100,8 @@ public class CcdService
         var removed = ccds.Remove(ccdName);
         if (removed)
         {
-            SaveCcds(ccds);
+            var defaultCcd = DefaultCcd == ccdName ? null : DefaultCcd;
+            SaveConfig(ccds, defaultCcd);
             Console.WriteLine($"[CcdService] Successfully deleted CCD group: {ccdName}");
         }
         else
@@ -107,10 +112,21 @@ public class CcdService
         return removed;
     }
 
+    public void SetDefaultCcd(string? ccdName)
+    {
+        Console.WriteLine($"[CcdService] Setting default CCD: {ccdName ?? "null"}");
+        if (ccdName != null && !Ccds.ContainsKey(ccdName))
+        {
+            throw new ArgumentException($"CCD group '{ccdName}' does not exist");
+        }
+        
+        SaveConfig(Ccds, ccdName);
+    }
+
     /// <summary>
-    /// Save CCD configuration
+    /// Save CCD configuration and default settings
     /// </summary>
-    private void SaveCcds(Dictionary<string, CcdConfig> ccds)
+    private void SaveConfig(Dictionary<string, CcdConfig> ccds, string? defaultCcd)
     {
         try
         {
@@ -121,11 +137,12 @@ public class CcdService
                 Directory.CreateDirectory(directory);
             }
 
-            var config = new TomlConfig { Ccds = ccds };
+            var config = new TomlConfig { Ccds = ccds, DefaultCcd = defaultCcd };
             var tomlString = Toml.FromModel(config);
             File.WriteAllText(_storePath, tomlString);
             Ccds = ccds;
-            Console.WriteLine($"[CcdService] Successfully saved CCD configuration, total {ccds.Count} CCD groups");
+            DefaultCcd = defaultCcd;
+            Console.WriteLine($"[CcdService] Successfully saved CCD configuration, total {ccds.Count} CCD groups, default: {defaultCcd ?? "none"}");
         }
         catch (Exception ex)
         {
