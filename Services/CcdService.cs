@@ -9,6 +9,9 @@ public class CcdService
 
     public Dictionary<string, CcdConfig> Ccds { get; private set; } = new();
     public string? DefaultCcd { get; private set; }
+    public string? GameCcd { get; private set; }
+    public bool GameModeEnabled { get; private set; }
+    public List<string> GameProcessNames { get; private set; } = new();
 
 
     public CcdService()
@@ -40,6 +43,9 @@ public class CcdService
                 Console.WriteLine("[CcdService] Config file does not exist, returning empty configuration");
                 Ccds = new Dictionary<string, CcdConfig>();
                 DefaultCcd = null;
+                GameCcd = null;
+                GameModeEnabled = false;
+                GameProcessNames = new List<string>();
                 return;
             }
 
@@ -48,6 +54,9 @@ public class CcdService
             Console.WriteLine($"[CcdService] Successfully loaded CCD configuration, total {model?.Ccds?.Count ?? 0} CCD groups");
             Ccds = model?.Ccds ?? new Dictionary<string, CcdConfig>();
             DefaultCcd = model?.DefaultCcd;
+            GameCcd = model?.GameCcd;
+            GameModeEnabled = model?.GameModeEnabled ?? false;
+            GameProcessNames = model?.GameProcessNames ?? new List<string>();
         }
         catch (Exception ex)
         {
@@ -82,9 +91,8 @@ public class CcdService
             throw new ArgumentException("CPU core number must be between 0-63");
         }
 
-        var ccds = Ccds;
-        ccds[ccdName] = new CcdConfig { Cores = cores };
-        SaveConfig(ccds, DefaultCcd);
+        Ccds[ccdName] = new CcdConfig { Cores = cores };
+        SaveConfig();
         Console.WriteLine($"[CcdService] Successfully updated CCD group: {ccdName}");
     }
 
@@ -96,12 +104,12 @@ public class CcdService
     public bool DeleteCcd(string ccdName)
     {
         Console.WriteLine($"[CcdService] Attempting to delete CCD group: {ccdName}");
-        var ccds = Ccds;
-        var removed = ccds.Remove(ccdName);
+        var removed = Ccds.Remove(ccdName);
         if (removed)
         {
-            var defaultCcd = DefaultCcd == ccdName ? null : DefaultCcd;
-            SaveConfig(ccds, defaultCcd);
+            if (DefaultCcd == ccdName) DefaultCcd = null;
+            if (GameCcd == ccdName) GameCcd = null;
+            SaveConfig();
             Console.WriteLine($"[CcdService] Successfully deleted CCD group: {ccdName}");
         }
         else
@@ -119,14 +127,54 @@ public class CcdService
         {
             throw new ArgumentException($"CCD group '{ccdName}' does not exist");
         }
-        
-        SaveConfig(Ccds, ccdName);
+
+        DefaultCcd = ccdName;
+        SaveConfig();
     }
 
     /// <summary>
-    /// Save CCD configuration and default settings
+    /// Set the CCD group automatically applied to detected games.
     /// </summary>
-    private void SaveConfig(Dictionary<string, CcdConfig> ccds, string? defaultCcd)
+    public void SetGameCcd(string? ccdName)
+    {
+        Console.WriteLine($"[CcdService] Setting game CCD: {ccdName ?? "null"}");
+        if (ccdName != null && !Ccds.ContainsKey(ccdName))
+        {
+            throw new ArgumentException($"CCD group '{ccdName}' does not exist");
+        }
+
+        GameCcd = ccdName;
+        SaveConfig();
+    }
+
+    /// <summary>
+    /// Enable or disable automatic game detection.
+    /// </summary>
+    public void SetGameModeEnabled(bool enabled)
+    {
+        Console.WriteLine($"[CcdService] Setting game mode enabled: {enabled}");
+        GameModeEnabled = enabled;
+        SaveConfig();
+    }
+
+    /// <summary>
+    /// Replace the user-maintained list of process names always treated as games.
+    /// </summary>
+    public void SetGameProcessNames(IEnumerable<string> names)
+    {
+        GameProcessNames = names
+            .Select(n => n.Trim())
+            .Where(n => !string.IsNullOrEmpty(n))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        Console.WriteLine($"[CcdService] Setting game process names, total {GameProcessNames.Count}");
+        SaveConfig();
+    }
+
+    /// <summary>
+    /// Save the full CCD configuration (CCD groups, default/game CCD and game list) to disk.
+    /// </summary>
+    private void SaveConfig()
     {
         try
         {
@@ -137,12 +185,17 @@ public class CcdService
                 Directory.CreateDirectory(directory);
             }
 
-            var config = new TomlConfig { Ccds = ccds, DefaultCcd = defaultCcd };
+            var config = new TomlConfig
+            {
+                Ccds = Ccds,
+                DefaultCcd = DefaultCcd,
+                GameCcd = GameCcd,
+                GameModeEnabled = GameModeEnabled,
+                GameProcessNames = GameProcessNames
+            };
             var tomlString = Toml.FromModel(config);
             File.WriteAllText(_storePath, tomlString);
-            Ccds = ccds;
-            DefaultCcd = defaultCcd;
-            Console.WriteLine($"[CcdService] Successfully saved CCD configuration, total {ccds.Count} CCD groups, default: {defaultCcd ?? "none"}");
+            Console.WriteLine($"[CcdService] Successfully saved CCD configuration, total {Ccds.Count} CCD groups, default: {DefaultCcd ?? "none"}, game: {GameCcd ?? "none"}");
         }
         catch (Exception ex)
         {

@@ -22,7 +22,9 @@ public partial class App : Application
         services.AddSingleton<CcdService>();
         services.AddTransient<ViewModels.AddProcessViewModel>();
         services.AddTransient<ViewModels.DefaultCcdViewModel>();
+        services.AddTransient<ViewModels.GameSettingsViewModel>();
         services.AddSingleton<ProcessMonitorService>();
+        services.AddSingleton<GameDetectionService>();
 
         var serviceProvider = services.BuildServiceProvider();
         var mainWindow = serviceProvider.GetRequiredService<MainWindow>();

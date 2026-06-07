@@ -22,7 +22,13 @@ public partial class MonitoredProcessListItem : ObservableObject
     [ObservableProperty]
     private bool _isDefaultProcess = false;
 
-    public string DisplayName => IsDefaultProcess ? "Default (Other Processes)" : ProcessName;
+    [ObservableProperty]
+    private bool _isGame = false;
+
+    public string DisplayName =>
+        IsDefaultProcess ? "Default (Other Processes)"
+        : IsGame ? $"🎮 {ProcessName}"
+        : ProcessName;
 }
 
 public partial class MainViewModel : ObservableObject, IDisposable
@@ -30,6 +36,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private readonly ProcessAffinityService _processAffinityService;
     private readonly MonitoredProcessService _monitoredProcessService;
     private readonly CcdService _ccdService;
+    private readonly GameDetectionService _gameDetectionService;
     private readonly IServiceProvider _serviceProvider;
     private readonly Debouncer _updateDebouncer;
 
@@ -39,15 +46,23 @@ public partial class MainViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private bool _isAutoApplyRules = false;
 
+    [ObservableProperty]
+    private bool _isGameModeEnabled = false;
+
+    [ObservableProperty]
+    private string _gameStatus = string.Empty;
+
     public MainViewModel(
         MonitoredProcessService monitoredProcessService,
         ProcessAffinityService processAffinityService,
         CcdService ccdService,
+        GameDetectionService gameDetectionService,
         IServiceProvider serviceProvider)
     {
         _monitoredProcessService = monitoredProcessService;
         _processAffinityService = processAffinityService;
         _ccdService = ccdService;
+        _gameDetectionService = gameDetectionService;
         _serviceProvider = serviceProvider;
 
         _isAutoApplyRules = _monitoredProcessService.IsAutoApplyRules;
@@ -59,6 +74,14 @@ public partial class MainViewModel : ObservableObject, IDisposable
                 _monitoredProcessService.IsAutoApplyRules = IsAutoApplyRules;
             }
         };
+
+        // Configure and start automatic game detection from persisted settings.
+        _gameDetectionService.SetGameNames(_ccdService.GameProcessNames);
+        _gameDetectionService.GameDetected += OnGameDetected;
+        _gameDetectionService.GameStopped += OnGameStopped;
+        _isGameModeEnabled = _ccdService.GameModeEnabled;
+        _gameDetectionService.IsEnabled = _isGameModeEnabled;
+        _gameStatus = GetIdleGameStatus();
 
         _updateDebouncer = new Debouncer(DoUpdateMonitoredProcesses, 1000);
 
@@ -111,7 +134,8 @@ public partial class MainViewModel : ObservableObject, IDisposable
                 ProcessName = p.ProcessName,
                 CcdName = p.CcdName,
                 ProcessAffinityHumanReadable = affinityString,
-                IsDefaultProcess = false
+                IsDefaultProcess = false,
+                IsGame = p.AutoDetectedGame
             };
         }));
 
@@ -218,6 +242,112 @@ public partial class MainViewModel : ObservableObject, IDisposable
         }
 
         ApplyDefaultCcdToOtherProcesses();
+    }
+
+    [RelayCommand]
+    private void ApplyProcess(MonitoredProcessListItem? item)
+    {
+        if (item == null)
+        {
+            return;
+        }
+
+        // The default row applies the default CCD to every non-monitored process.
+        if (item.IsDefaultProcess)
+        {
+            ApplyDefaultCcdToOtherProcesses();
+            UpdateMonitoredProcesses();
+            return;
+        }
+
+        if (!_ccdService.Ccds.TryGetValue(item.CcdName, out var ccd))
+        {
+            MessageBox.Show($"CCD group '{item.CcdName}' does not exist", "Error",
+                            MessageBoxButton.OK, MessageBoxImage.Error);
+            return;
+        }
+
+        var affinityMask = ProcessAffinityService.CreateAffinityMask(ccd.Cores);
+        var result = ProcessAffinityService.SetAffinityByName(item.ProcessName, affinityMask);
+        if (!result.Success)
+        {
+            Console.WriteLine($"[MainViewModel] Failed to set CPU affinity: {result.Message}");
+        }
+
+        UpdateMonitoredProcesses();
+    }
+
+    private void OnGameDetected(ProcessInfo game)
+    {
+        var gameCcdName = _ccdService.GameCcd;
+        if (string.IsNullOrEmpty(gameCcdName) || !_ccdService.Ccds.TryGetValue(gameCcdName, out var ccd))
+        {
+            Console.WriteLine("[MainViewModel] Game mode enabled but no valid Game CCD is configured");
+            GameStatus = $"Detected game: {game.ProcessName} — but no Game CCD set (open Game Settings)";
+            return;
+        }
+
+        var affinityMask = ProcessAffinityService.CreateAffinityMask(ccd.Cores);
+        var result = ProcessAffinityService.SetAffinityById(game.ProcessId, affinityMask);
+        if (!result.Success)
+        {
+            Console.WriteLine($"[MainViewModel] Failed to apply Game CCD to {game.ProcessName}: {result.Message}");
+            GameStatus = $"Detected game: {game.ProcessName} → {gameCcdName} (apply failed: {result.Message})";
+        }
+        else
+        {
+            Console.WriteLine($"[MainViewModel] Applied Game CCD '{gameCcdName}' to {game.ProcessName}");
+            GameStatus = $"Detected game: {game.ProcessName} → CCD '{gameCcdName}'";
+        }
+
+        // Import the detected game into the list as a rule so it stays visible
+        // (and highlighted) even after the game loses focus. Never override an
+        // existing user-defined rule for the same process.
+        if (!_monitoredProcessService.MonitoredProcesses.ContainsKey(game.ProcessName))
+        {
+            _monitoredProcessService.AddMonitoredProcess(new MonitoredProcess
+            {
+                ProcessName = game.ProcessName,
+                CcdName = gameCcdName,
+                AutoDetectedGame = true
+            });
+        }
+
+        UpdateMonitoredProcesses();
+    }
+
+    private void OnGameStopped(ProcessInfo game)
+    {
+        GameStatus = GetIdleGameStatus();
+        UpdateMonitoredProcesses();
+    }
+
+    private string GetIdleGameStatus()
+    {
+        return _ccdService.GameModeEnabled
+            ? "Game mode on — watching, no game detected"
+            : "Game mode off";
+    }
+
+    partial void OnIsGameModeEnabledChanged(bool value)
+    {
+        _ccdService.SetGameModeEnabled(value);
+        _gameDetectionService.IsEnabled = value;
+        GameStatus = GetIdleGameStatus();
+    }
+
+    [RelayCommand]
+    private void OpenGameSettings()
+    {
+        var vm = _serviceProvider.GetRequiredService<GameSettingsViewModel>();
+        var dialog = new GameSettingsWindow(vm);
+
+        if (dialog.ShowDialog() == true)
+        {
+            _ccdService.SetGameCcd(vm.ResolvedGameCcd);
+            _ccdService.SetGameProcessNames(vm.GameNames);
+            _gameDetectionService.SetGameNames(_ccdService.GameProcessNames);
+        }
     }
 
     [RelayCommand]

@@ -32,9 +32,40 @@
                           VerticalAlignment="Center"
                           Margin="20,0,0,0"
                           IsChecked="{Binding IsAutoApplyRules}"/>
+                <CheckBox Content="Auto Game Mode"
+                          VerticalAlignment="Center"
+                          Margin="20,0,0,0"
+                          IsChecked="{Binding IsGameModeEnabled}"/>
+                <Button Command="{Binding OpenGameSettingsCommand}"
+                        Padding="8,3"
+                        Margin="10,0,0,0">
+                    <TextBlock Text="Game Settings"/>
+                </Button>
             </StackPanel>
 
+            <Border DockPanel.Dock="Bottom"
+                    Background="#F0F0F0"
+                    BorderBrush="#D0D0D0"
+                    BorderThickness="0,1,0,0"
+                    Margin="0,8,0,0"
+                    Padding="6,4">
+                <TextBlock Text="{Binding GameStatus}"
+                           VerticalAlignment="Center"
+                           TextTrimming="CharacterEllipsis"/>
+            </Border>
+
             <ListView ItemsSource="{Binding MonitoredProcessListItems}">
+                <ListView.ItemContainerStyle>
+                    <Style TargetType="ListViewItem">
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsGame}" Value="True">
+                                <Setter Property="Background" Value="#FFF3CD"/>
+                                <Setter Property="FontWeight" Value="SemiBold"/>
+                                <Setter Property="ToolTip" Value="Auto-detected game"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </ListView.ItemContainerStyle>
                 <ListView.View>
                     <GridView>
                         <GridViewColumn Header="Process Name"
@@ -61,23 +92,30 @@
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
-                        <GridViewColumn Width="100">
+                        <GridViewColumn Width="160">
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate>
-                                    <Button Command="{Binding DataContext.RemoveProcessCommand, 
-                                                        RelativeSource={RelativeSource AncestorType=ListView}}"
-                                            CommandParameter="{Binding ProcessName}">
-                                        <Button.Style>
-                                            <Style TargetType="Button">
-                                                <Setter Property="Content" Value="Remove"/>
-                                                <Style.Triggers>
-                                                    <DataTrigger Binding="{Binding IsDefaultProcess}" Value="True">
-                                                        <Setter Property="Content" Value="Edit"/>
-                                                    </DataTrigger>
-                                                </Style.Triggers>
-                                            </Style>
-                                        </Button.Style>
-                                    </Button>
+                                    <StackPanel Orientation="Horizontal">
+                                        <Button Content="Apply"
+                                                Margin="0,0,6,0"
+                                                Command="{Binding DataContext.ApplyProcessCommand,
+                                                            RelativeSource={RelativeSource AncestorType=ListView}}"
+                                                CommandParameter="{Binding}"/>
+                                        <Button Command="{Binding DataContext.RemoveProcessCommand,
+                                                            RelativeSource={RelativeSource AncestorType=ListView}}"
+                                                CommandParameter="{Binding ProcessName}">
+                                            <Button.Style>
+                                                <Style TargetType="Button">
+                                                    <Setter Property="Content" Value="Remove"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding IsDefaultProcess}" Value="True">
+                                                            <Setter Property="Content" Value="Edit"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Button.Style>
+                                        </Button>
+                                    </StackPanel>
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
